@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import ContentCard from './ContentCard';
 import type { Content } from '@/types/content';
 
@@ -7,20 +6,12 @@ interface ContentGridProps {
   isLoading?: boolean;
 }
 
-// Helper function to get content ID
+// Helper function to get content ID for keys
 const getContentId = (content: Content): string => {
   return content._id || content.id || content.oldContentId?.toString() || content.slug || '';
 };
 
 export default function ContentGrid({ contents, isLoading }: ContentGridProps) {
-  const navigate = useNavigate();
-
-  const handleContentClick = (content: Content) => {
-    const contentId = getContentId(content);
-    if (contentId) {
-      navigate(`/content/${contentId}`);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -53,7 +44,6 @@ export default function ContentGrid({ contents, isLoading }: ContentGridProps) {
           <ContentCard
             key={contentId || Math.random()} // Fallback to random key if no ID
             content={content}
-            onClick={() => handleContentClick(content)}
           />
         );
       })}

@@ -28,6 +28,29 @@ export const contentService = {
     }
   },
 
+  createContent: async (slug: string): Promise<Content> => {
+    try {
+      const response = await api.post<Content>(API_ENDPOINTS.CREATE_CONTENT, { slug });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        // Handle "already exists" case
+        if (error.response?.data?.message?.includes('already exists')) {
+          throw {
+            message: 'CONTENT_EXISTS',
+            status: error.response?.status,
+            data: error.response?.data,
+          };
+        }
+        throw {
+          message: error.response?.data?.message || error.message,
+          status: error.response?.status,
+        };
+      }
+      throw { message: 'An unexpected error occurred' };
+    }
+  },
+
   getContentById: async (id: string): Promise<{ success: boolean; data: Content | null; message?: string }> => {
     try {
       // First get all content, then find the specific item

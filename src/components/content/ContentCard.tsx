@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { COLORS } from '@/utils/constants';
+import { useNavigate } from 'react-router-dom';
 import type { Content } from '@/types/content';
 
 interface ContentCardProps {
@@ -8,10 +9,19 @@ interface ContentCardProps {
 }
 
 export default function ContentCard({ content, onClick }: ContentCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else if (content.slug) {
+      navigate(`/content-detail/${content.slug}`);
+    }
+  };
   return (
     <Card 
       className="group cursor-pointer overflow-hidden border-gray-200 transition-transform hover:scale-105"
-      onClick={onClick}
+      onClick={handleClick}
     >
       <CardContent className="p-0">
         {/* Thumbnail */}

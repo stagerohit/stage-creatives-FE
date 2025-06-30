@@ -1,48 +1,68 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+// import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Calendar, Tag } from 'lucide-react';
 import { contentService } from '@/services/api';
+import { useContentStore } from '@/store/useContentStore';
 import { COLORS } from '@/utils/constants';
 import type { Content, ApiError } from '@/types/content';
 
 export default function ContentDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { contents } = useContentStore();
+  
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [isCreatingContent, setIsCreatingContent] = useState(false);
+
+  // Get content data from home page store for thumbnail and basic info
+  const homePageContent = contents.find((item: Content) => item.slug === slug);
 
   useEffect(() => {
-    const fetchContent = async () => {
-      if (!id) {
-        setError({ message: 'Content ID is required' });
+    const handleContentCreation = async () => {
+      if (!slug) {
+        setError({ message: 'Content slug is required' });
         setIsLoading(false);
         return;
       }
 
       try {
         setIsLoading(true);
+        setIsCreatingContent(true);
         setError(null);
         
-        const response = await contentService.getContentById(id);
+        const response = await contentService.createContent(slug);
+        setContent(response);
         
-        if (response.success && response.data) {
-          setContent(response.data);
+      } catch (err: any) {
+        console.log('Create content error:', err);
+        
+        // If content already exists, that's fine - just show it
+        if (err.message === 'CONTENT_EXISTS') {
+          // Content already exists, use the returned data or home page data
+          if (err.data) {
+            setContent(err.data);
+          } else if (homePageContent) {
+            setContent(homePageContent);
+          } else {
+            setError({ message: 'Content not found' });
+          }
         } else {
-          setError({ message: response.message || 'Content not found' });
+          setError({ message: 'Content Not Found' });
         }
-      } catch (err) {
-        setError({ message: 'Failed to fetch content details' });
       } finally {
         setIsLoading(false);
+        setIsCreatingContent(false);
       }
     };
 
-    fetchContent();
-  }, [id]);
+    handleContentCreation();
+  }, [slug, homePageContent]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -76,6 +96,11 @@ export default function ContentDetailPage() {
                 <div className="h-4 bg-gray-200 rounded w-1/4"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
               </div>
+              {isCreatingContent && (
+                <div className="text-center mt-4">
+                  <p className="text-gray-600">Loading content...</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -90,32 +115,37 @@ export default function ContentDetailPage() {
         )}
 
         {/* Content Display */}
-        {content && !isLoading && !error && (
-          <Card>
-            <CardContent className="p-0">
-              {/* Thumbnail */}
-              <div className="aspect-video w-full overflow-hidden bg-gray-100 rounded-t-lg">
-                {content.thumbnailURL ? (
-                  <img
-                    src={content.thumbnailURL}
-                    alt={content.title}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gray-200">
-                    <div className="text-gray-400 text-lg">No Image Available</div>
-                  </div>
-                )}
-              </div>
-              
-              {/* Content Info */}
-              <div className="p-8">
+        {(content || homePageContent) && !isLoading && !error && (
+          <div className="space-y-6">
+                         {/* Video Player Section */}
+             {content?.trailer_url && (
+               <Card>
+                 <CardContent className="p-0">
+                   <div className="aspect-video w-full overflow-hidden bg-black rounded-t-lg relative">
+                     <video
+                       className="w-full h-full object-cover"
+                       controls
+                       poster={homePageContent?.thumbnailURL}
+                       preload="metadata"
+                     >
+                       <source src={content.trailer_url} type="video/mp4" />
+                       <source src={content.trailer_url} type="video/webm" />
+                       <source src={content.trailer_url} type="video/ogg" />
+                       Your browser does not support the video tag.
+                     </video>
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
+
+            {/* Content Info Card */}
+            <Card>
+              <CardContent className="p-8">
                 <h1 
                   className="text-3xl font-bold text-gray-900 mb-4"
                   style={{ fontFamily: 'Roboto, sans-serif' }}
                 >
-                  {content.title}
+                  {content?.title || homePageContent?.title}
                 </h1>
                 
                 <div className="flex flex-wrap gap-4 mb-6">
@@ -128,56 +158,91 @@ export default function ContentDetailPage() {
                         color: COLORS.CONTENT_BADGE
                       }}
                     >
-                      {content.contentType}
+                      {content?.content_type || homePageContent?.contentType}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span className="text-sm">
-                      Created: {formatDate(content.createdAt)}
-                    </span>
-                  </div>
+                  {(content?.created_at || homePageContent?.createdAt) && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Calendar className="h-4 w-4" />
+                      <span className="text-sm">
+                        Created: {formatDate(content?.created_at || homePageContent?.createdAt || '')}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Description */}
+                {content?.description && (
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      Description
+                    </h2>
+                    <p className="text-gray-700 leading-relaxed">
+                      {content.description}
+                    </p>
+                  </div>
+                )}
                 
+                {/* Content Details */}
                 <div className="border-t pt-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
                     Content Details
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium text-gray-700">ID:</span>
-                      <span className="text-gray-600 ml-2">{content._id || content.id || content.oldContentId}</span>
+                      <span className="font-medium text-gray-700">Slug:</span>
+                      <span className="text-gray-600 ml-2">{content?.slug || homePageContent?.slug}</span>
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Type:</span>
-                      <span className="text-gray-600 ml-2">{content.contentType}</span>
+                      <span className="text-gray-600 ml-2">{content?.content_type || homePageContent?.contentType}</span>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Created:</span>
-                      <span className="text-gray-600 ml-2">{formatDate(content.createdAt)}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Updated:</span>
-                      <span className="text-gray-600 ml-2">{formatDate(content.updatedAt)}</span>
-                    </div>
-                    {content.dialect && (
-                      <div>
-                        <span className="font-medium text-gray-700">Dialect:</span>
-                        <span className="text-gray-600 ml-2">{content.dialect}</span>
-                      </div>
-                    )}
-                    {content.language && (
+                    {(content?.language || homePageContent?.language) && (
                       <div>
                         <span className="font-medium text-gray-700">Language:</span>
-                        <span className="text-gray-600 ml-2">{content.language}</span>
+                        <span className="text-gray-600 ml-2">{content?.language || homePageContent?.language}</span>
+                      </div>
+                    )}
+                    {(content?.dialect || homePageContent?.dialect) && (
+                      <div>
+                        <span className="font-medium text-gray-700">Dialect:</span>
+                        <span className="text-gray-600 ml-2">{content?.dialect || homePageContent?.dialect}</span>
+                      </div>
+                    )}
+                    {content?.genre && (
+                      <div>
+                        <span className="font-medium text-gray-700">Genre:</span>
+                        <span className="text-gray-600 ml-2">{content.genre}</span>
+                      </div>
+                    )}
+                    {content?.content_id && (
+                      <div>
+                        <span className="font-medium text-gray-700">Content ID:</span>
+                        <span className="text-gray-600 ml-2">{content.content_id}</span>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Thumbnail Fallback if no video */}
+            {!content?.trailer_url && homePageContent?.thumbnailURL && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="aspect-video w-full overflow-hidden bg-gray-100 rounded-lg">
+                    <img
+                      src={homePageContent.thumbnailURL}
+                      alt={content?.title || homePageContent.title}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -18,6 +18,12 @@ export interface Content {
   transcodingStatus?: string;
   createdBy?: string;
   updatedBy?: string;
+  // Additional fields from create-content API response
+  trailer_url?: string;
+  content_type?: string;
+  created_at?: string;
+  genre?: string;
+  content_id?: string;
 }
 
 export interface ContentResponse {

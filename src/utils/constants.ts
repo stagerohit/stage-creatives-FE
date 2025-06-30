@@ -2,6 +2,7 @@ export const API_BASE_URL = 'http://localhost:3001';
 
 export const API_ENDPOINTS = {
   ALL_CONTENT: '/all-content',
+  CREATE_CONTENT: '/create-content',
 } as const;
 
 export const COLORS = {
