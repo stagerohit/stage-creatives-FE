@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-// import ReactPlayer from 'react-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,6 +9,16 @@ import { useContentStore } from '@/store/useContentStore';
 import { COLORS } from '@/utils/constants';
 import type { Content, ApiError } from '@/types/content';
 
+const TABS = [
+  { id: 'posters', label: 'Posters' },
+  { id: 'ai-images', label: 'AI Images' },
+  { id: 'copies', label: 'Copies' },
+  { id: 'tagline', label: 'Tagline' },
+  { id: 'title-logo', label: 'title Logo' },
+  { id: 'images', label: 'Images' },
+  { id: 'videos', label: 'Videos' },
+];
+
 export default function ContentDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -18,13 +27,14 @@ export default function ContentDetailPage() {
   const [content, setContent] = useState<Content | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
-  const [isCreatingContent, setIsCreatingContent] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<'fetching' | 'creating' | 'refetching' | null>(null);
+  const [activeTab, setActiveTab] = useState('posters');
 
-  // Get content data from home page store for thumbnail and basic info
+  // Get content data from home page store for thumbnail matching
   const homePageContent = contents.find((item: Content) => item.slug === slug);
 
   useEffect(() => {
-    const handleContentCreation = async () => {
+    const handleContentFlow = async () => {
       if (!slug) {
         setError({ message: 'Content slug is required' });
         setIsLoading(false);
@@ -33,36 +43,59 @@ export default function ContentDetailPage() {
 
       try {
         setIsLoading(true);
-        setIsCreatingContent(true);
         setError(null);
         
-        const response = await contentService.createContent(slug);
-        setContent(response);
+        // Step 1: Try to fetch content by slug first
+        setLoadingStage('fetching');
+        try {
+          const fetchedContent = await contentService.fetchContentBySlug(slug);
+          setContent(fetchedContent);
+          setIsLoading(false);
+          setLoadingStage(null);
+          return; // Content found, exit early
+        } catch (fetchError: any) {
+          // If content doesn't exist (404), proceed to create it
+          if (fetchError.status === 404) {
+            console.log('Content not found, will create it');
+          } else {
+            // If it's not a 404, it's a different error
+            throw fetchError;
+          }
+        }
+
+        // Step 2: Content doesn't exist, create it
+        setLoadingStage('creating');
+        try {
+          await contentService.createContent(slug);
+          console.log('Content created successfully');
+        } catch (createError: any) {
+          // If creation fails because content already exists, that's fine
+          if (createError.message === 'CONTENT_EXISTS') {
+            console.log('Content already exists, proceeding to fetch');
+          } else {
+            throw createError;
+          }
+        }
+
+        // Step 3: Fetch the content again after creation
+        setLoadingStage('refetching');
+        const createdContent = await contentService.fetchContentBySlug(slug);
+        setContent(createdContent);
         
       } catch (err: any) {
-        console.log('Create content error:', err);
-        
-        // If content already exists, that's fine - just show it
-        if (err.message === 'CONTENT_EXISTS') {
-          // Content already exists, use the returned data or home page data
-          if (err.data) {
-            setContent(err.data);
-          } else if (homePageContent) {
-            setContent(homePageContent);
-          } else {
-            setError({ message: 'Content not found' });
-          }
-        } else {
-          setError({ message: 'Content Not Found' });
-        }
+        console.error('Content flow error:', err);
+        setError({ 
+          message: err.message || 'Failed to load content',
+          status: err.status 
+        });
       } finally {
         setIsLoading(false);
-        setIsCreatingContent(false);
+        setLoadingStage(null);
       }
     };
 
-    handleContentCreation();
-  }, [slug, homePageContent]);
+    handleContentFlow();
+  }, [slug]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -72,37 +105,46 @@ export default function ContentDetailPage() {
     });
   };
 
-  return (
+  const getLoadingMessage = () => {
+    switch (loadingStage) {
+      case 'fetching':
+        return 'Checking if content exists...';
+      case 'creating':
+        return 'Creating content...';
+      case 'refetching':
+        return 'Loading content details...';
+      default:
+        return 'Loading...';
+    }
+  };
+
+      return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
+      {/* Back Button - Left of layout */}
+      <div className="px-2 pt-4 pb-2">
+        <div className="flex items-start gap-6">
           <Button
             variant="outline"
             onClick={() => navigate('/')}
-            className="flex items-center gap-2"
+            className="p-2 h-10 w-10"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Home
           </Button>
-        </div>
-        
-        {/* Loading State */}
+          
+                    <div className="flex-1 container mx-auto">
+          {/* Loading State */}
         {isLoading && (
-          <Card>
-            <CardContent className="p-8">
-              <div className="animate-pulse space-y-4">
-                <div className="h-64 bg-gray-200 rounded-lg"></div>
-                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </div>
-              {isCreatingContent && (
-                <div className="text-center mt-4">
-                  <p className="text-gray-600">Loading content...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div className="bg-gray-100 rounded-lg p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            </div>
+            <div className="text-center mt-4">
+              <p className="text-gray-600">{getLoadingMessage()}</p>
+            </div>
+          </div>
         )}
 
         {/* Error State */}
@@ -114,136 +156,337 @@ export default function ContentDetailPage() {
           </Alert>
         )}
 
-        {/* Content Display */}
-        {(content || homePageContent) && !isLoading && !error && (
-          <div className="space-y-6">
-                         {/* Video Player Section */}
-             {content?.trailer_url && (
-               <Card>
-                 <CardContent className="p-0">
-                   <div className="aspect-video w-full overflow-hidden bg-black rounded-t-lg relative">
-                     <video
-                       className="w-full h-full object-cover"
-                       controls
-                       poster={homePageContent?.thumbnailURL}
-                       preload="metadata"
-                     >
-                       <source src={content.trailer_url} type="video/mp4" />
-                       <source src={content.trailer_url} type="video/webm" />
-                       <source src={content.trailer_url} type="video/ogg" />
-                       Your browser does not support the video tag.
-                     </video>
-                   </div>
-                 </CardContent>
-               </Card>
-             )}
+        {/* Content Display - Sidebar Layout */}
+        {content && !isLoading && !error && (
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left Sidebar - Content Details (25%) */}
+            <div className="w-full lg:w-1/4 lg:min-w-[350px]">
+              <div className="bg-gray-100 min-h-screen p-6 space-y-4">
+                {/* Title */}
+                <div>
+                  <h1 className="font-bold text-gray-900 text-left" style={{ fontSize: '45px' }}>
+                    {content.title}
+                  </h1>
+                </div>
 
-            {/* Content Info Card */}
-            <Card>
-              <CardContent className="p-8">
-                <h1 
-                  className="text-3xl font-bold text-gray-900 mb-4"
-                  style={{ fontFamily: 'Roboto, sans-serif' }}
-                >
-                  {content?.title || homePageContent?.title}
-                </h1>
-                
-                <div className="flex flex-wrap gap-4 mb-6">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-gray-500" />
-                    <span
-                      className="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
-                      style={{ 
-                        backgroundColor: COLORS.CONTENT_BADGE + '20',
-                        color: COLORS.CONTENT_BADGE
-                      }}
-                    >
-                      {content?.content_type || homePageContent?.contentType}
-                    </span>
-                  </div>
-                  
-                  {(content?.created_at || homePageContent?.createdAt) && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-sm">
-                        Created: {formatDate(content?.created_at || homePageContent?.createdAt || '')}
-                      </span>
+                {/* Video/Thumbnail */}
+                <div className="w-full">
+                  {content.trailer_url ? (
+                    <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                      <video
+                        className="w-full h-full object-cover"
+                        controls
+                        poster={homePageContent?.thumbnailURL}
+                        preload="metadata"
+                        playsInline
+                        crossOrigin="anonymous"
+                        onError={(e) => console.error('Video error:', e)}
+                      >
+                        <source src={content.trailer_url} type="video/mp4" />
+                        <source src={content.trailer_url} type="video/webm" />
+                        <source src={content.trailer_url} type="video/ogg" />
+                        Your browser does not support the video tag.
+                      </video>
                     </div>
+                  ) : (
+                    homePageContent?.thumbnailURL && (
+                      <div className="aspect-video w-full bg-gray-200 rounded-lg overflow-hidden">
+                        <img
+                          src={homePageContent.thumbnailURL}
+                          alt={content.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )
                   )}
                 </div>
 
                 {/* Description */}
-                {content?.description && (
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                {content.description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-2 text-left" style={{ fontSize: '17px' }}>
                       Description
-                    </h2>
-                    <p className="text-gray-700 leading-relaxed">
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-line text-left" style={{ fontSize: '17px' }}>
                       {content.description}
                     </p>
                   </div>
                 )}
-                
-                {/* Content Details */}
-                <div className="border-t pt-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    Content Details
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">Slug:</span>
-                      <span className="text-gray-600 ml-2">{content?.slug || homePageContent?.slug}</span>
+
+                {/* Content Type Badge */}
+                <div className="flex justify-start">
+                  <span
+                    className="inline-flex items-center rounded-full px-3 py-1 font-medium"
+                    style={{ 
+                      backgroundColor: COLORS.CONTENT_BADGE + '20',
+                      color: COLORS.CONTENT_BADGE,
+                      fontSize: '17px'
+                    }}
+                  >
+                    {content.content_type}
+                  </span>
+                </div>
+
+                {/* Additional Details */}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="text-sm">
+                    <span className="font-medium text-gray-700">Slug:</span>
+                    <span className="text-gray-600 ml-2">{content.slug}</span>
+                  </div>
+                  {content.language && (
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">Language:</span>
+                      <span className="text-gray-600 ml-2">{content.language}</span>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Type:</span>
-                      <span className="text-gray-600 ml-2">{content?.content_type || homePageContent?.contentType}</span>
+                  )}
+                  {content.dialect && (
+                    <div className="text-sm">
+                      <span className="font-medium text-gray-700">Dialect:</span>
+                      <span className="text-gray-600 ml-2">{content.dialect}</span>
                     </div>
-                    {(content?.language || homePageContent?.language) && (
-                      <div>
-                        <span className="font-medium text-gray-700">Language:</span>
-                        <span className="text-gray-600 ml-2">{content?.language || homePageContent?.language}</span>
-                      </div>
-                    )}
-                    {(content?.dialect || homePageContent?.dialect) && (
-                      <div>
-                        <span className="font-medium text-gray-700">Dialect:</span>
-                        <span className="text-gray-600 ml-2">{content?.dialect || homePageContent?.dialect}</span>
-                      </div>
-                    )}
-                    {content?.genre && (
-                      <div>
-                        <span className="font-medium text-gray-700">Genre:</span>
-                        <span className="text-gray-600 ml-2">{content.genre}</span>
-                      </div>
-                    )}
-                    {content?.content_id && (
-                      <div>
-                        <span className="font-medium text-gray-700">Content ID:</span>
-                        <span className="text-gray-600 ml-2">{content.content_id}</span>
-                      </div>
-                    )}
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Tabs Content (75%) */}
+            <div className="hidden lg:block w-full lg:w-3/4">
+              <div className="bg-white rounded-lg p-6 min-h-[600px]">
+                {/* Tab Navigation - Style 1: Underline Tabs (Final Choice) */}
+                <div className="border-b border-gray-200 mb-6">
+                  <div className="flex w-full">
+                    {TABS.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex-1 px-4 py-4 font-semibold text-sm transition-all duration-300 relative ${
+                          activeTab === tab.id
+                            ? 'border-b-3'
+                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                        }`}
+                        style={{
+                          color: activeTab === tab.id ? COLORS.PRIMARY : undefined,
+                          borderBottomColor: activeTab === tab.id ? COLORS.PRIMARY : 'transparent',
+                          borderBottomWidth: activeTab === tab.id ? '3px' : '0px',
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Thumbnail Fallback if no video */}
-            {!content?.trailer_url && homePageContent?.thumbnailURL && (
-              <Card>
-                <CardContent className="p-0">
-                  <div className="aspect-video w-full overflow-hidden bg-gray-100 rounded-lg">
-                    <img
-                      src={homePageContent.thumbnailURL}
-                      alt={content?.title || homePageContent.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                {/* Tab Content */}
+                <div className="min-h-[400px] overflow-y-auto">
+                  {activeTab === 'posters' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Posters</h3>
+                      <p className="text-gray-500">Poster variations will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'ai-images' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">AI Images</h3>
+                      <p className="text-gray-500">AI generated images will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'copies' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Copies</h3>
+                      <p className="text-gray-500">Text copies and scripts will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'tagline' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Tagline</h3>
+                      <p className="text-gray-500">Tagline variations in image form will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'title-logo' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Title Logo</h3>
+                      <p className="text-gray-500">Logo variations and versions will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'images' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Images</h3>
+                      <p className="text-gray-500">General images related to content will be displayed here</p>
+                    </div>
+                  )}
+                  
+                  {activeTab === 'videos' && (
+                    <div className="text-center py-12">
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Videos</h3>
+                      <p className="text-gray-500">Related videos and clips will be displayed here</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* Mobile Layout - Full Width */}
+        {content && !isLoading && !error && (
+          <div className="block lg:hidden">
+            {/* Mobile Sidebar */}
+            <div className="bg-gray-100 p-4 mb-4">
+              {/* Mobile Title */}
+              <div className="mb-4">
+                <h1 className="font-bold text-gray-900 text-left" style={{ fontSize: '28px' }}>
+                  {content.title}
+                </h1>
+              </div>
+
+              {/* Mobile Video/Thumbnail */}
+              <div className="w-full mb-4">
+                {content.trailer_url ? (
+                  <div className="aspect-video w-full bg-black rounded-lg overflow-hidden">
+                    <video
+                      className="w-full h-full object-cover"
+                      controls
+                      poster={homePageContent?.thumbnailURL}
+                      preload="metadata"
+                      playsInline
+                      crossOrigin="anonymous"
+                      onError={(e) => console.error('Video error:', e)}
+                    >
+                      <source src={content.trailer_url} type="video/mp4" />
+                      <source src={content.trailer_url} type="video/webm" />
+                      <source src={content.trailer_url} type="video/ogg" />
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                ) : (
+                  homePageContent?.thumbnailURL && (
+                    <div className="aspect-video w-full bg-gray-200 rounded-lg overflow-hidden">
+                      <img
+                        src={homePageContent.thumbnailURL}
+                        alt={content.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Mobile Description */}
+              {content.description && (
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-700 mb-2 text-left" style={{ fontSize: '16px' }}>
+                    Description
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line text-left" style={{ fontSize: '15px' }}>
+                    {content.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Mobile Content Type Badge */}
+              <div className="flex justify-start mb-4">
+                <span
+                  className="inline-flex items-center rounded-full px-3 py-1 font-medium"
+                  style={{ 
+                    backgroundColor: COLORS.CONTENT_BADGE + '20',
+                    color: COLORS.CONTENT_BADGE,
+                    fontSize: '15px'
+                  }}
+                >
+                  {content.content_type}
+                </span>
+              </div>
+            </div>
+
+            {/* Mobile Tabs */}
+            <div className="bg-white rounded-lg p-4">
+              {/* Mobile Tab Navigation - Style 1: Underline Tabs */}
+              <div className="border-b border-gray-200 mb-4">
+                <div className="flex overflow-x-auto scrollbar-hide">
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`px-4 py-3 font-semibold text-sm whitespace-nowrap transition-all duration-300 flex-shrink-0 min-w-[100px] relative ${
+                        activeTab === tab.id
+                          ? 'border-b-3'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                      }`}
+                      style={{
+                        color: activeTab === tab.id ? COLORS.PRIMARY : undefined,
+                        borderBottomColor: activeTab === tab.id ? COLORS.PRIMARY : 'transparent',
+                        borderBottomWidth: activeTab === tab.id ? '3px' : '0px',
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Tab Content */}
+              <div className="min-h-[300px] overflow-y-auto">
+                {activeTab === 'posters' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Posters</h3>
+                    <p className="text-gray-500">Poster variations will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'ai-images' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">AI Images</h3>
+                    <p className="text-gray-500">AI generated images will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'copies' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Copies</h3>
+                    <p className="text-gray-500">Text copies and scripts will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'tagline' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Tagline</h3>
+                    <p className="text-gray-500">Tagline variations in image form will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'title-logo' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Title Logo</h3>
+                    <p className="text-gray-500">Logo variations and versions will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'images' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Images</h3>
+                    <p className="text-gray-500">General images related to content will be displayed here</p>
+                  </div>
+                )}
+                
+                {activeTab === 'videos' && (
+                  <div className="text-center py-8">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Videos</h3>
+                    <p className="text-gray-500">Related videos and clips will be displayed here</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+          </div>
+        </div>
       </div>
     </div>
   );

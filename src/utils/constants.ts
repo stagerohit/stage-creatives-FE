@@ -3,6 +3,7 @@ export const API_BASE_URL = 'http://localhost:3001';
 export const API_ENDPOINTS = {
   ALL_CONTENT: '/all-content',
   CREATE_CONTENT: '/create-content',
+  GET_CONTENT_BY_SLUG: '/content/slug',
 } as const;
 
 export const COLORS = {
