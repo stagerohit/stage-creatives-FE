@@ -43,63 +43,43 @@ export default function ImageGenerationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header Placeholder */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Image Generation - {content.title}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {content.title} &gt; Image Generation
-          </p>
-        </div>
-      </div>
-
+    <div className="h-screen bg-gray-50">
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-5 gap-8 h-[calc(100vh-200px)]">
+      <div className="h-full p-4">
+        <div className="grid grid-cols-5 gap-8 h-full">
           {/* Left Side - 40% width (2 columns) */}
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-2 flex flex-col gap-6 h-full">
             {/* Section 1: Textarea */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold mb-4">Section 1 - AI Prompt</h2>
-              <div className="h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow p-2">
+              <div className="h-[278px] bg-gray-100 rounded-lg flex items-center justify-center">
                 <span className="text-gray-500">Textarea placeholder</span>
               </div>
             </div>
 
             {/* Section 2: Image Tabs */}
-            <div className="bg-white rounded-lg shadow p-6 flex-1">
-              <h2 className="text-lg font-semibold mb-4">Section 2 - Image Tabs</h2>
-              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow p-2 flex-1 flex flex-col">
+              <div className="flex-1 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-gray-500">Images/AI Images tabs placeholder</span>
+              </div>
+              
+              {/* Controls: Dimension and Generate */}
+              <div className="flex justify-between items-center">
+                <div className="w-32 h-10 bg-gray-100 rounded flex items-center justify-center">
+                  <span className="text-sm text-gray-500">Dimension</span>
+                </div>
+                <div className="w-24 h-10 bg-green-500 rounded flex items-center justify-center">
+                  <span className="text-sm text-white">Generate</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Right Side - 60% width (3 columns) */}
-          <div className="col-span-3">
-            <div className="bg-white rounded-lg shadow p-6 h-full">
-              <h2 className="text-lg font-semibold mb-4">Section 3 - Generated Results</h2>
+          <div className="col-span-3 h-full">
+            <div className="bg-white rounded-lg shadow p-2 h-full">
               <div className="h-full bg-gray-100 rounded-lg flex items-center justify-center">
                 <span className="text-gray-500">Generated results will appear here</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Controls */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">Controls:</span>
-              <div className="w-32 h-10 bg-gray-100 rounded flex items-center justify-center">
-                <span className="text-sm text-gray-500">Dimension</span>
-              </div>
-            </div>
-            <div className="w-24 h-10 bg-green-500 rounded flex items-center justify-center">
-              <span className="text-sm text-white">Generate</span>
             </div>
           </div>
         </div>
