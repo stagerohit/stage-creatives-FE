@@ -1,12 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Calendar, Tag } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { contentService } from '@/services/api';
 import { useContentStore } from '@/store/useContentStore';
 import { COLORS } from '@/utils/constants';
+import PostersTab from '@/components/content/PostersTab';
+import AIImagesTab from '@/components/content/AIImagesTab';
+import CopiesTab from '@/components/content/CopiesTab';
+import TaglineTab from '@/components/content/TaglineTab';
+import TitleLogoTab from '@/components/content/TitleLogoTab';
+import ImagesTab from '@/components/content/ImagesTab';
+import VideosTab from '@/components/content/VideosTab';
 import type { Content, ApiError } from '@/types/content';
 
 const TABS = [
@@ -14,7 +20,7 @@ const TABS = [
   { id: 'ai-images', label: 'AI Images' },
   { id: 'copies', label: 'Copies' },
   { id: 'tagline', label: 'Tagline' },
-  { id: 'title-logo', label: 'title Logo' },
+  { id: 'title-logo', label: 'Title Logo' },
   { id: 'images', label: 'Images' },
   { id: 'videos', label: 'Videos' },
 ];
@@ -97,13 +103,7 @@ export default function ContentDetailPage() {
     handleContentFlow();
   }, [slug]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+
 
   const getLoadingMessage = () => {
     switch (loadingStage) {
@@ -280,52 +280,31 @@ export default function ContentDetailPage() {
                 {/* Tab Content */}
                 <div className="min-h-[400px] overflow-y-auto">
                   {activeTab === 'posters' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Posters</h3>
-                      <p className="text-gray-500">Poster variations will be displayed here</p>
-                    </div>
+                    <PostersTab content={content} />
                   )}
                   
                   {activeTab === 'ai-images' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">AI Images</h3>
-                      <p className="text-gray-500">AI generated images will be displayed here</p>
-                    </div>
+                    <AIImagesTab content={content} />
                   )}
                   
                   {activeTab === 'copies' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Copies</h3>
-                      <p className="text-gray-500">Text copies and scripts will be displayed here</p>
-                    </div>
+                    <CopiesTab content={content} />
                   )}
                   
                   {activeTab === 'tagline' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Tagline</h3>
-                      <p className="text-gray-500">Tagline variations in image form will be displayed here</p>
-                    </div>
+                    <TaglineTab content={content} />
                   )}
                   
                   {activeTab === 'title-logo' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Title Logo</h3>
-                      <p className="text-gray-500">Logo variations and versions will be displayed here</p>
-                    </div>
+                    <TitleLogoTab content={content} />
                   )}
                   
                   {activeTab === 'images' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Images</h3>
-                      <p className="text-gray-500">General images related to content will be displayed here</p>
-                    </div>
+                    <ImagesTab content={content} />
                   )}
                   
                   {activeTab === 'videos' && (
-                    <div className="text-center py-12">
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Videos</h3>
-                      <p className="text-gray-500">Related videos and clips will be displayed here</p>
-                    </div>
+                    <VideosTab content={content} />
                   )}
                 </div>
               </div>
@@ -469,17 +448,11 @@ export default function ContentDetailPage() {
                 )}
                 
                 {activeTab === 'images' && (
-                  <div className="text-center py-8">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Images</h3>
-                    <p className="text-gray-500">General images related to content will be displayed here</p>
-                  </div>
+                  <ImagesTab content={content} />
                 )}
                 
                 {activeTab === 'videos' && (
-                  <div className="text-center py-8">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Videos</h3>
-                    <p className="text-gray-500">Related videos and clips will be displayed here</p>
-                  </div>
+                  <VideosTab content={content} />
                 )}
               </div>
             </div>
