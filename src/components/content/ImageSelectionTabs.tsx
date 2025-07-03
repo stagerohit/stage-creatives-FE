@@ -12,6 +12,7 @@ interface ImageSelectionTabsProps {
   onImageSelect: (imageId: string, isSelected: boolean) => void;
   maxSelections: number;
   onGenerate: (dimension: string, channel: string) => void;
+  isGenerating?: boolean;
 }
 
 export default function ImageSelectionTabs({ 
@@ -19,7 +20,8 @@ export default function ImageSelectionTabs({
   selectedImages, 
   onImageSelect, 
   maxSelections,
-  onGenerate 
+  onGenerate,
+  isGenerating = false
 }: ImageSelectionTabsProps) {
   const [activeTab, setActiveTab] = useState<'images' | 'ai-images'>('images');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
@@ -34,6 +36,8 @@ export default function ImageSelectionTabs({
   const handleGenerate = () => {
     onGenerate(selectedDimension, selectedChannel);
   };
+
+  const isGenerateDisabled = selectedImages.length === 0 || isGenerating || !selectedDimension || !selectedChannel;
 
   return (
     <div className="h-full relative">
@@ -137,9 +141,9 @@ export default function ImageSelectionTabs({
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
             onClick={handleGenerate}
-            disabled={selectedImages.length === 0}
+            disabled={isGenerateDisabled}
           >
-            Generate
+            {isGenerating ? 'Generating...' : 'Generate'}
           </Button>
         </div>
       </div>

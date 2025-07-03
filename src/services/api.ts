@@ -258,6 +258,48 @@ export const contentService = {
       throw { message: 'An unexpected error occurred' };
     }
   },
+
+  generateAIImage: async (payload: {
+    content_id: string;
+    slug: string;
+    ratio: string;
+    channel: string;
+    promptText: string;
+    referenceImages: Array<{
+      uri: string;
+      tag: string;
+    }>;
+  }): Promise<any> => {
+    try {
+      // Create a custom axios instance with longer timeout for AI image generation
+      const response = await axios.post(
+        `${API_BASE_URL}${API_ENDPOINTS.GENERATE_AI_IMAGE}`, 
+        payload,
+        {
+          timeout: 120000, // 2 minutes timeout for AI image generation
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        // Handle timeout specifically
+        if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+          throw {
+            message: 'AI image generation is taking longer than expected. Please try again.',
+            status: 'timeout',
+          };
+        }
+        throw {
+          message: error.response?.data?.message || error.message,
+          status: error.response?.status,
+        };
+      }
+      throw { message: 'An unexpected error occurred' };
+    }
+  },
 };
 
 export default api; 

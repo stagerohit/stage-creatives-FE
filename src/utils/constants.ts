@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   UPLOAD_IMAGES: '/images/upload',
   GET_VIDEOS_BY_CONTENT: '/videos/content',
   UPLOAD_VIDEOS: '/videos/upload',
+  GENERATE_AI_IMAGE: '/ai-images/generate',
 } as const;
 
 export const COLORS = {
