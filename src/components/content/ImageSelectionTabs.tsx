@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { COLORS, DIMENSION_OPTIONS } from '@/utils/constants';
+import { COLORS, DIMENSION_OPTIONS, CHANNEL_OPTIONS } from '@/utils/constants';
 import ImageSelectionTab from './ImageSelectionTab';
 import AIImageSelectionTab from './AIImageSelectionTab';
 import type { Content } from '@/types/content';
@@ -11,7 +11,7 @@ interface ImageSelectionTabsProps {
   selectedImages: string[];
   onImageSelect: (imageId: string, isSelected: boolean) => void;
   maxSelections: number;
-  onGenerate: (dimension: string) => void;
+  onGenerate: (dimension: string, channel: string) => void;
 }
 
 export default function ImageSelectionTabs({ 
@@ -23,6 +23,7 @@ export default function ImageSelectionTabs({
 }: ImageSelectionTabsProps) {
   const [activeTab, setActiveTab] = useState<'images' | 'ai-images'>('images');
   const [selectedDimension, setSelectedDimension] = useState<string>('');
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
 
   const handleClearAll = () => {
     selectedImages.forEach(imageId => {
@@ -31,7 +32,7 @@ export default function ImageSelectionTabs({
   };
 
   const handleGenerate = () => {
-    onGenerate(selectedDimension);
+    onGenerate(selectedDimension, selectedChannel);
   };
 
   return (
@@ -104,18 +105,33 @@ export default function ImageSelectionTabs({
       {/* Fixed Controls at Bottom - Absolutely positioned */}
       <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 p-3 bg-white" style={{ height: '60px' }}>
         <div className="flex justify-between items-center">
-          <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Dimension" />
-            </SelectTrigger>
-            <SelectContent>
-              {DIMENSION_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select value={selectedChannel} onValueChange={setSelectedChannel}>
+              <SelectTrigger className="w-28">
+                <SelectValue placeholder="Channel" />
+              </SelectTrigger>
+              <SelectContent>
+                {CHANNEL_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedDimension} onValueChange={setSelectedDimension}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Dimension" />
+              </SelectTrigger>
+              <SelectContent>
+                {DIMENSION_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
           <Button 
             className="font-semibold"

@@ -51,16 +51,7 @@ export default function ImageSelectionTab({
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
       
-      console.log('ImageSelectionTab - fetchImages result:', {
-        totalImages: sortedImages.length,
-        rawImageIds: sortedImages.map(img => img.image_id),
-        rawImagesIds: sortedImages.map(img => (img as any).images_id),
-        rawIds: sortedImages.map(img => img._id),
-        computedImageIds: sortedImages.map(img => getImageId(img)),
-        uniqueComputedIds: [...new Set(sortedImages.map(img => getImageId(img)))],
-        sampleImage: sortedImages[0],
-        fullSampleImage: JSON.stringify(sortedImages[0], null, 2)
-      });
+
       
       setImages(sortedImages);
     } catch (err: any) {
@@ -88,13 +79,7 @@ export default function ImageSelectionTab({
     const prefixedId = `image_${imageId}`;
     const isCurrentlySelected = selectedImages.includes(prefixedId);
     
-    console.log('ImageSelectionTab - handleImageClick:', {
-      originalId: imageId,
-      prefixedId,
-      isCurrentlySelected,
-      selectedImages,
-      allImageIds: images.map(img => getImageId(img))
-    });
+
     
     if (isCurrentlySelected) {
       // If already selected, deselect it
@@ -152,21 +137,13 @@ export default function ImageSelectionTab({
     <div>
       {/* Images Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[1px]">
-        {images.map((image, index) => {
+        {images.map((image) => {
           const imageId = getImageId(image);
           const prefixedId = `image_${imageId}`;
           const isSelected = selectedImages.includes(prefixedId);
           const canSelect = selectedImages.length < maxSelections || isSelected;
           
-          console.log(`ImageSelectionTab - rendering image ${index}:`, {
-            rawImageId: image.image_id,
-            rawImagesId: (image as any).images_id,
-            rawId: image._id,
-            computedImageId: imageId,
-            prefixedId,
-            isSelected,
-            selectedImages
-          });
+
           
                       return (
             <div key={imageId}>

@@ -1,9 +1,9 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { contentService } from '@/services/api';
-import AIPromptTextarea from '@/components/content/AIPromptTextarea';
+import AIPromptSection from '@/components/content/AIPromptSection';
 import ImageSelectionTabs from '@/components/content/ImageSelectionTabs';
-import type { Content } from '@/types/content';
+import type { Content, Image, AIImage } from '@/types/content';
 
 export default function ImageGenerationPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -11,6 +11,8 @@ export default function ImageGenerationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [aiPrompt, setAiPrompt] = useState<string>('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [allImages, setAllImages] = useState<Image[]>([]);
+  const [allAIImages, setAllAIImages] = useState<AIImage[]>([]);
   
   const maxSelections = 3;
 
@@ -26,23 +28,76 @@ export default function ImageGenerationPage() {
     }
   };
 
-  const handleGenerate = (dimension: string) => {
+  const handleGenerate = (dimension: string, channel: string) => {
     // TODO: Implement generate functionality
     console.log('Generate clicked with:', {
       selectedImages,
       dimension,
+      channel,
       aiPrompt
     });
   };
 
+  const handleImageRemove = (imageId: string) => {
+    setSelectedImages(prev => prev.filter(id => id !== imageId));
+  };
+
+  const getSelectedImageData = (imageIds: string[]) => {
+    const result: Array<{ id: string; url: string; type: 'image' | 'ai_image' }> = [];
+    
+    imageIds.forEach(id => {
+      if (id.startsWith('image_')) {
+        const actualId = id.replace('image_', '');
+        const image = allImages.find(img => 
+          (img as any).images_id === actualId || img.image_id === actualId || img._id === actualId
+        );
+        if (image) {
+          result.push({
+            id: id,
+            url: image.image_url,
+            type: 'image'
+          });
+        }
+      } else if (id.startsWith('ai_image_')) {
+        const actualId = id.replace('ai_image_', '');
+        const aiImage = allAIImages.find(img => 
+          img.ai_image_id === actualId || img._id === actualId
+        );
+        if (aiImage) {
+          result.push({
+            id: id,
+            url: aiImage.ai_image_url,
+            type: 'ai_image'
+          });
+        }
+      }
+    });
+    
+    return result;
+  };
+
   useEffect(() => {
-    const fetchContent = async () => {
+    const fetchContentAndImages = async () => {
       if (!slug) return;
       
       try {
         setIsLoading(true);
         const contentData = await contentService.fetchContentBySlug(slug);
         setContent(contentData);
+
+        // Get content ID for fetching images
+        const contentId = contentData.content_id || contentData.id || contentData._id || contentData.oldContentId?.toString() || '';
+        
+        if (contentId) {
+          // Fetch images and AI images in parallel
+          const [imagesResponse, aiImagesResponse] = await Promise.all([
+            contentService.getImagesByContentId(contentId).catch(() => []),
+            contentService.getAIImagesByContentId(contentId).catch(() => [])
+          ]);
+
+          setAllImages(Array.isArray(imagesResponse) ? imagesResponse : []);
+          setAllAIImages(Array.isArray(aiImagesResponse) ? aiImagesResponse : []);
+        }
       } catch (error) {
         console.error('Failed to fetch content:', error);
       } finally {
@@ -50,7 +105,7 @@ export default function ImageGenerationPage() {
       }
     };
 
-    fetchContent();
+    fetchContentAndImages();
   }, [slug]);
 
   if (isLoading) {
@@ -79,9 +134,12 @@ export default function ImageGenerationPage() {
             {/* Section 1: AI Prompt Textarea - Fixed Height */}
             <div className="bg-white rounded-lg shadow p-2 mb-[5px]" style={{ height: '300px' }}>
               <div className="h-[278px]">
-                <AIPromptTextarea
+                <AIPromptSection
                   value={aiPrompt}
                   onChange={setAiPrompt}
+                  selectedImages={selectedImages}
+                  onImageRemove={handleImageRemove}
+                  getSelectedImageData={getSelectedImageData}
                 />
               </div>
             </div>
