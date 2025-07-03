@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,6 +12,7 @@ interface AIImagesTabProps {
 }
 
 export default function AIImagesTab({ content }: AIImagesTabProps) {
+  const navigate = useNavigate();
   const [aiImages, setAIImages] = useState<AIImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
@@ -79,6 +81,14 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
     return dimension.replace(':', ' x ');
   };
 
+  const handleCreateAIImage = () => {
+    if (content.slug) {
+      navigate(`/content-detail/${content.slug}/image-generation`);
+    } else {
+      console.error('Content slug not found');
+    }
+  };
+
   // Loading State
   if (isLoading) {
     return (
@@ -142,10 +152,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create AI image functionality
-              console.log('Create AI Image clicked');
-            }}
+            onClick={handleCreateAIImage}
           >
             Create AI Image
           </Button>
@@ -198,10 +205,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create AI image functionality
-              console.log('Create AI Image clicked');
-            }}
+            onClick={handleCreateAIImage}
           >
             Create AI Image
           </Button>
@@ -220,10 +224,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
             <Button 
               className="font-semibold"
               style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-              onClick={() => {
-                // Placeholder for create AI image functionality
-                console.log('Create AI Image clicked');
-              }}
+              onClick={handleCreateAIImage}
             >
               Create First AI Image
             </Button>
@@ -269,10 +270,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
         <Button 
           className="font-semibold"
           style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-          onClick={() => {
-            // Placeholder for create AI image functionality
-            console.log('Create AI Image clicked');
-          }}
+          onClick={handleCreateAIImage}
         >
           Create AI Image
         </Button>
