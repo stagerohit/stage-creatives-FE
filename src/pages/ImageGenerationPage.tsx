@@ -73,11 +73,11 @@ export default function ImageGenerationPage() {
     <div className="h-screen bg-gray-50">
       {/* Main Content */}
       <div className="h-full p-4">
-        <div className="grid grid-cols-5 gap-8 h-full">
+        <div className="grid grid-cols-5 gap-[5px] h-full">
           {/* Left Side - 40% width (2 columns) */}
           <div className="col-span-2 flex flex-col h-full">
             {/* Section 1: AI Prompt Textarea - Fixed Height */}
-            <div className="bg-white rounded-lg shadow p-2 mb-6" style={{ height: '300px' }}>
+            <div className="bg-white rounded-lg shadow p-2 mb-[5px]" style={{ height: '300px' }}>
               <div className="h-[278px]">
                 <AIPromptTextarea
                   value={aiPrompt}
@@ -89,7 +89,7 @@ export default function ImageGenerationPage() {
             {/* Section 2: Image Selection Tabs - Calculated Height */}
             <div 
               className="bg-white rounded-lg shadow" 
-              style={{ height: 'calc(100% - 300px - 24px)' }}
+              style={{ height: 'calc(100% - 300px - 5px)' }}
             >
               <ImageSelectionTabs 
                 content={content}
