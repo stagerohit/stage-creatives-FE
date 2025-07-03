@@ -12,7 +12,7 @@ export default function Header() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo and Brand Name */}
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
             <img 
               src="/stage-logo.png" 
               alt="Creatives" 
@@ -27,9 +27,9 @@ export default function Header() {
               }}
             >
               Creatives
-            </h1>
-          </div>
-
+              </h1>
+            </div>
+            
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-8">
             <div className="relative">

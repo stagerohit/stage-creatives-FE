@@ -43,22 +43,22 @@ export default function ContentCard({ content, onClick }: ContentCardProps) {
         {/* Content Info */}
         <div className="p-4">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 
+          <h3 
               className="font-medium text-gray-900 line-clamp-2 flex-1"
-              style={{ 
-                fontFamily: 'Roboto, sans-serif',
-                fontSize: '15px'
-              }}
-            >
-              {content.title}
-            </h3>
-            
+            style={{ 
+              fontFamily: 'Roboto, sans-serif',
+              fontSize: '15px'
+            }}
+          >
+            {content.title}
+          </h3>
+          
             <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0"
-                 style={{ 
-                   backgroundColor: COLORS.CONTENT_BADGE + '20',
-                   color: COLORS.CONTENT_BADGE
-                 }}>
-              {content.contentType}
+               style={{ 
+                 backgroundColor: COLORS.CONTENT_BADGE + '20',
+                 color: COLORS.CONTENT_BADGE
+               }}>
+            {content.contentType}
             </div>
           </div>
         </div>

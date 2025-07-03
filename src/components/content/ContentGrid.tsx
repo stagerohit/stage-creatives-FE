@@ -41,10 +41,10 @@ export default function ContentGrid({ contents, isLoading }: ContentGridProps) {
       {contents.map((content) => {
         const contentId = getContentId(content);
         return (
-          <ContentCard
+        <ContentCard
             key={contentId || Math.random()} // Fallback to random key if no ID
-            content={content}
-          />
+          content={content}
+        />
         );
       })}
     </div>
