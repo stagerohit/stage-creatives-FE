@@ -13,15 +13,22 @@ export interface CanvasAsset {
   height: number;
   selected: boolean;
   data: any;
+  effects?: any; // ImageEffects from ImageEditingTools
 }
 
 interface PosterCanvasProps {
+  assets?: CanvasAsset[];
   onAssetsChange?: (assets: CanvasAsset[]) => void;
 }
 
-export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
+export default function PosterCanvas({ assets: externalAssets = [], onAssetsChange }: PosterCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [assets, setAssets] = useState<CanvasAsset[]>([]);
+
+  // Sync internal assets with external assets prop
+  useEffect(() => {
+    setAssets(externalAssets);
+  }, [externalAssets]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -196,9 +203,171 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     assets.forEach(asset => {
       const img = loadedImages.get(asset.id);
       if (img) {
-        ctx.drawImage(img, asset.x, asset.y, asset.width, asset.height);
+        ctx.save(); // Save current context state
         
-        // Draw selection border if selected
+        // Apply effects if present
+        if (asset.effects) {
+          const effects = asset.effects;
+          console.log('Applying effects to asset:', asset.id, effects);
+          
+          // Apply transformations
+          const centerX = asset.x + asset.width / 2;
+          const centerY = asset.y + asset.height / 2;
+          
+          // Move to center for rotation
+          ctx.translate(centerX, centerY);
+          
+          // Apply rotation
+          if (effects.rotation) {
+            ctx.rotate((effects.rotation * Math.PI) / 180);
+          }
+          
+          // Apply flip
+          ctx.scale(
+            effects.flipHorizontal ? -1 : 1,
+            effects.flipVertical ? -1 : 1
+          );
+          
+          // Apply opacity
+          if (effects.opacity !== undefined) {
+            ctx.globalAlpha = effects.opacity / 100;
+          }
+          
+          // Apply filters using CSS filter string
+          const filters = [];
+          if (effects.brightness !== 0) filters.push(`brightness(${100 + effects.brightness}%)`);
+          if (effects.contrast !== 0) filters.push(`contrast(${100 + effects.contrast}%)`);
+          if (effects.saturation !== 0) filters.push(`saturate(${100 + effects.saturation}%)`);
+          if (effects.hue !== 0) filters.push(`hue-rotate(${effects.hue}deg)`);
+          if (effects.blur > 0) filters.push(`blur(${effects.blur}px)`);
+          if (effects.sepia > 0) filters.push(`sepia(${effects.sepia}%)`);
+          if (effects.grayscale > 0) filters.push(`grayscale(${effects.grayscale}%)`);
+          if (effects.invert) filters.push(`invert(100%)`);
+          
+          if (filters.length > 0) {
+            ctx.filter = filters.join(' ');
+          }
+          
+          // Draw image centered at origin (due to translation)
+          ctx.drawImage(img, -asset.width / 2, -asset.height / 2, asset.width, asset.height);
+          
+          // Draw gradient overlay if enabled
+          if (effects.gradient?.enabled && effects.gradient.opacity > 0) {
+            const gradient = ctx.createLinearGradient(
+              -asset.width / 2,
+              -asset.height / 2,
+              asset.width / 2,
+              asset.height / 2
+            );
+            effects.gradient.colors.forEach((colorStop: any) => {
+              gradient.addColorStop(colorStop.position / 100, colorStop.color);
+            });
+            
+            ctx.globalAlpha = (effects.gradient.opacity / 100) * (effects.opacity / 100);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(-asset.width / 2, -asset.height / 2, asset.width, asset.height);
+          }
+
+          // Draw advanced gradient overlay if enabled
+          if (effects.advancedGradient) {
+            const advGrad = effects.advancedGradient;
+            console.log('Applying advanced gradient:', advGrad);
+            
+            // Create gradient based on type
+            let gradient: CanvasGradient;
+            
+            if (advGrad.type === 'linear') {
+              if (advGrad.area) {
+                // Scale coordinates from preview area to actual asset dimensions
+                const previewWidth = advGrad.previewDimensions?.width || 400;
+                const previewHeight = advGrad.previewDimensions?.height || 240;
+                
+                const scaleX = asset.width / previewWidth;
+                const scaleY = asset.height / previewHeight;
+                
+                const startX = (advGrad.area.startX * scaleX) - asset.width / 2;
+                const startY = (advGrad.area.startY * scaleY) - asset.height / 2;
+                const endX = (advGrad.area.endX * scaleX) - asset.width / 2;
+                const endY = (advGrad.area.endY * scaleY) - asset.height / 2;
+                
+                gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+              } else {
+                // Default to full image
+                gradient = ctx.createLinearGradient(-asset.width / 2, -asset.height / 2, asset.width / 2, asset.height / 2);
+              }
+            } else if (advGrad.type === 'radial') {
+              if (advGrad.area) {
+                const previewWidth = advGrad.previewDimensions?.width || 400;
+                const previewHeight = advGrad.previewDimensions?.height || 240;
+                
+                const scaleX = asset.width / previewWidth;
+                const scaleY = asset.height / previewHeight;
+                
+                const centerX = ((advGrad.area.startX + advGrad.area.endX) / 2 * scaleX) - asset.width / 2;
+                const centerY = ((advGrad.area.startY + advGrad.area.endY) / 2 * scaleY) - asset.height / 2;
+                const radius = Math.sqrt(
+                  Math.pow((advGrad.area.endX - advGrad.area.startX) * scaleX, 2) + 
+                  Math.pow((advGrad.area.endY - advGrad.area.startY) * scaleY, 2)
+                ) / 2;
+                
+                gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+              } else {
+                gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.min(asset.width, asset.height) / 2);
+              }
+            } else {
+              // Conic gradient fallback to linear
+              gradient = ctx.createLinearGradient(-asset.width / 2, -asset.height / 2, asset.width / 2, asset.height / 2);
+            }
+            
+            // Add color stops
+            const sortedStops = [...advGrad.colorStops].sort((a, b) => a.position - b.position);
+            sortedStops.forEach(stop => {
+              gradient.addColorStop(stop.position / 100, stop.color);
+            });
+            
+            // Apply gradient with opacity and blend mode
+            ctx.globalAlpha = (advGrad.opacity / 100) * (effects.opacity / 100);
+            ctx.globalCompositeOperation = advGrad.blendMode as GlobalCompositeOperation;
+            ctx.fillStyle = gradient;
+            
+            // Apply gradient to specified area or full image
+            if (advGrad.area) {
+              const previewWidth = advGrad.previewDimensions?.width || 400;
+              const previewHeight = advGrad.previewDimensions?.height || 240;
+              
+              const scaleX = asset.width / previewWidth;
+              const scaleY = asset.height / previewHeight;
+              
+              const gradX = (advGrad.area.startX * scaleX) - asset.width / 2;
+              const gradY = (advGrad.area.startY * scaleY) - asset.height / 2;
+              const gradW = Math.abs(advGrad.area.endX - advGrad.area.startX) * scaleX;
+              const gradH = Math.abs(advGrad.area.endY - advGrad.area.startY) * scaleY;
+              
+              ctx.fillRect(gradX, gradY, gradW, gradH);
+            } else {
+              ctx.fillRect(-asset.width / 2, -asset.height / 2, asset.width, asset.height);
+            }
+            
+            // Reset composite operation
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          
+          // Draw border if enabled
+          if (effects.borderWidth > 0) {
+            ctx.globalAlpha = effects.opacity / 100;
+            ctx.strokeStyle = effects.borderColor;
+            ctx.lineWidth = effects.borderWidth;
+            ctx.strokeRect(-asset.width / 2, -asset.height / 2, asset.width, asset.height);
+          }
+          
+        } else {
+          // No effects, draw normally
+          ctx.drawImage(img, asset.x, asset.y, asset.width, asset.height);
+        }
+        
+        ctx.restore(); // Restore context state
+        
+        // Draw selection border if selected (always on top, no effects)
         if (asset.selected) {
           ctx.strokeStyle = '#3b82f6';
           ctx.lineWidth = 2;

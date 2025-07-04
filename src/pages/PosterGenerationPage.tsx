@@ -1,11 +1,12 @@
 import { useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { contentService } from '@/services/api';
 import { useToast } from '@/components/ui/toast';
 import PosterAssetTabs from '@/components/content/PosterAssetTabs';
 import PosterCanvas, { CanvasAsset } from '@/components/content/PosterCanvas';
+import ImageEditingTools from '@/components/content/ImageEditingTools';
 import type { Content, AIImage, TitleLogo, Tagline } from '@/types/content';
 
 export default function PosterGenerationPage() {
@@ -17,11 +18,57 @@ export default function PosterGenerationPage() {
   const [titleLogos, setTitleLogos] = useState<TitleLogo[]>([]);
   const [taglines, setTaglines] = useState<Tagline[]>([]);
   const [canvasAssets, setCanvasAssets] = useState<CanvasAsset[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<CanvasAsset | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Update selected asset when canvas assets change
+  useEffect(() => {
+    const selected = canvasAssets.find(asset => asset.selected);
+    setSelectedAsset(selected || null);
+  }, [canvasAssets]);
 
   const handleSavePoster = () => {
     // TODO: Implement save functionality
     console.log('Saving poster with assets:', canvasAssets);
     addToast('Save functionality will be implemented later', 'info');
+  };
+
+  // Handle asset updates from image editing tools
+  const handleAssetUpdate = (updatedAsset: CanvasAsset) => {
+    console.log('PosterGenerationPage received asset update:', updatedAsset.id, updatedAsset.effects);
+    setCanvasAssets(prev => 
+      prev.map(asset => 
+        asset.id === updatedAsset.id ? updatedAsset : asset
+      )
+    );
+  };
+
+  // Handle apply effects
+  const handleApplyEffects = () => {
+    // Effects are already applied in real-time, just show confirmation
+    addToast('Effects applied successfully', 'success');
+  };
+
+  // Handle cancel effects
+  const handleCancelEffects = () => {
+    // This will be handled by the ImageEditingTools component
+    addToast('Effects cancelled', 'info');
+  };
+
+  // Handle effect changes
+  const handleEffectChange = (assetId: string, effects: any) => {
+    console.log('Effect change for asset:', assetId, effects);
+    setCanvasAssets(prev => 
+      prev.map(asset => 
+        asset.id === assetId ? { ...asset, effects } : asset
+      )
+    );
+  };
+
+  // Handle asset actions
+  const handleAssetAction = (assetId: string, action: string) => {
+    console.log('Asset action:', assetId, action);
+    // Handle various asset actions here
   };
 
   useEffect(() => {
@@ -92,30 +139,30 @@ export default function PosterGenerationPage() {
 
             {/* Right Side - 70% width */}
             <div className="w-[70%] flex flex-col gap-2">
-              {/* Section 2A - Canvas (90% height) */}
-              <div className="h-[90%] bg-white rounded-lg shadow p-4 flex flex-col">
+              {/* Section 2A - Canvas (70% height) */}
+              <div className="h-[70%] bg-white rounded-lg shadow p-4 flex flex-col">
                 <h3 className="text-lg font-semibold mb-4">Canvas</h3>
                 <div className="flex-1 min-h-0">
-                  <PosterCanvas onAssetsChange={setCanvasAssets} />
+                  <PosterCanvas 
+                    assets={canvasAssets}
+                    onAssetsChange={setCanvasAssets} 
+                  />
                 </div>
               </div>
 
-              {/* Bottom Section (10% height) */}
-              <div className="h-[10%] flex gap-2">
+              {/* Bottom Section (30% height) */}
+              <div className="h-[30%] flex gap-2">
                 {/* Section 3A - Tools (80% width) */}
-                <div className="w-[80%] bg-white rounded-lg shadow p-4">
-                  <h4 className="font-semibold mb-2">Image Editing Tools</h4>
-                  <div className="text-gray-500 text-sm">
-                    Tools will appear here
-                    {canvasAssets.length > 0 && (
-                      <div className="mt-2">
-                        <div className="text-xs">Canvas Assets: {canvasAssets.length}</div>
-                        <div className="text-xs">
-                          Selected: {canvasAssets.find(a => a.selected)?.type || 'None'}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div className="w-[80%] bg-white rounded-lg shadow overflow-hidden">
+                  <ImageEditingTools
+                    selectedAsset={selectedAsset}
+                    onAssetUpdate={handleAssetUpdate}
+                    onApply={handleApplyEffects}
+                    onCancel={handleCancelEffects}
+                    onEffectChange={handleEffectChange}
+                    onAssetAction={handleAssetAction}
+                    canvasRef={canvasRef}
+                  />
                 </div>
 
                 {/* Save Button (20% width) */}

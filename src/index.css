@@ -3,6 +3,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom slider styles */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e5e7eb;
+  outline: none;
+  border-radius: 8px;
+  height: 8px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider:hover::-webkit-slider-thumb {
+  background: #2563eb;
+}
+
+.slider:hover::-moz-range-thumb {
+  background: #2563eb;
+}
+
+/* Image editing tools scrolling */
+.tools-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.tools-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tools-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.tools-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.tools-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 @layer base {
   body {
     @apply bg-gray-50 text-gray-900 font-roboto;
