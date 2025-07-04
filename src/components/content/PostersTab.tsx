@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -11,6 +12,7 @@ interface PostersTabProps {
 }
 
 export default function PostersTab({ content }: PostersTabProps) {
+  const navigate = useNavigate();
   const [posters, setPosters] = useState<Poster[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
@@ -22,6 +24,10 @@ export default function PostersTab({ content }: PostersTabProps) {
   // Get content ID from content object
   const getContentId = () => {
     return content.content_id || content.id || content._id || content.oldContentId?.toString() || '';
+  };
+
+  const handleCreatePoster = () => {
+    navigate(`/content-detail/${content.slug}/poster-generation`);
   };
 
   useEffect(() => {
@@ -138,10 +144,7 @@ export default function PostersTab({ content }: PostersTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create poster functionality
-              console.log('Create Poster clicked');
-            }}
+            onClick={handleCreatePoster}
           >
             Create Poster
           </Button>
@@ -190,10 +193,7 @@ export default function PostersTab({ content }: PostersTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create poster functionality
-              console.log('Create Poster clicked');
-            }}
+            onClick={handleCreatePoster}
           >
             Create Poster
           </Button>
@@ -212,10 +212,7 @@ export default function PostersTab({ content }: PostersTabProps) {
             <Button 
               className="font-semibold"
               style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-              onClick={() => {
-                // Placeholder for create poster functionality
-                console.log('Create Poster clicked');
-              }}
+              onClick={handleCreatePoster}
             >
               Create First Poster
             </Button>
@@ -257,10 +254,7 @@ export default function PostersTab({ content }: PostersTabProps) {
         <Button 
           className="font-semibold"
           style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-          onClick={() => {
-            // Placeholder for create poster functionality
-            console.log('Create Poster clicked');
-          }}
+          onClick={handleCreatePoster}
         >
           Create Poster
         </Button>
