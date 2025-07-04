@@ -24,9 +24,88 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
   const [assets, setAssets] = useState<CanvasAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHandle, setResizeHandle] = useState<'tl' | 'tr' | 'bl' | 'br' | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [initialAssetState, setInitialAssetState] = useState<CanvasAsset | null>(null);
+  const [currentCursor, setCurrentCursor] = useState<string>('default');
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, assetId: string } | null>(null);
   const [loadedImages, setLoadedImages] = useState<Map<string, HTMLImageElement>>(new Map());
   const { addToast } = useToast();
+
+  // Handle keyboard events for deletion
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedAsset = assets.find(asset => asset.selected);
+        if (selectedAsset) {
+          setAssets(prev => {
+            const updated = prev.filter(asset => asset.id !== selectedAsset.id);
+            onAssetsChange?.(updated);
+            return updated;
+          });
+          setLoadedImages(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(selectedAsset.id);
+            return newMap;
+          });
+          setSelectedAssetId(null);
+          addToast('Image removed from canvas', 'success');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [assets, onAssetsChange, addToast]);
+
+  // Handle clicks outside context menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextMenu) {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
+
+  // Helper function to detect resize handle clicks
+  const getResizeHandle = useCallback((asset: CanvasAsset, x: number, y: number) => {
+    const handleSize = 8;
+    const handles = [
+      { type: 'tl', x: asset.x - handleSize/2, y: asset.y - handleSize/2 },
+      { type: 'tr', x: asset.x + asset.width - handleSize/2, y: asset.y - handleSize/2 },
+      { type: 'bl', x: asset.x - handleSize/2, y: asset.y + asset.height - handleSize/2 },
+      { type: 'br', x: asset.x + asset.width - handleSize/2, y: asset.y + asset.height - handleSize/2 },
+    ];
+
+    for (const handle of handles) {
+      if (x >= handle.x && x <= handle.x + handleSize && 
+          y >= handle.y && y <= handle.y + handleSize) {
+        return handle.type as 'tl' | 'tr' | 'bl' | 'br';
+      }
+    }
+    return null;
+  }, []);
+
+  // Helper function to get cursor style based on resize handle
+  const getCursorStyle = useCallback((handle: 'tl' | 'tr' | 'bl' | 'br' | null) => {
+    if (!handle) return 'default';
+    switch (handle) {
+      case 'tl':
+      case 'br':
+        return 'nw-resize';
+      case 'tr':
+      case 'bl':
+        return 'ne-resize';
+      default:
+        return 'default';
+    }
+  }, []);
 
   // Drop zone functionality
   const [{ isOver }, drop] = useDrop(() => ({
@@ -140,6 +219,18 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
           corners.forEach(corner => {
             ctx.fillRect(corner.x, corner.y, handleSize, handleSize);
           });
+
+          // Draw delete hint
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.font = '12px Arial';
+          const hintText = 'Press Delete to remove';
+          const textWidth = ctx.measureText(hintText).width;
+          const hintX = asset.x + asset.width - textWidth - 5;
+          const hintY = asset.y - 10;
+          
+          if (hintY > 12) { // Only show if there's space above
+            ctx.fillText(hintText, hintX, hintY);
+          }
         }
       }
     });
@@ -149,6 +240,9 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
   const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // Hide context menu on any click
+    setContextMenu(null);
 
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -178,7 +272,67 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     setSelectedAssetId(clickedAsset?.id || null);
   }, [assets, onAssetsChange]);
 
-  // Handle mouse down for dragging
+  // Handle right-click for context menu
+  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
+    event.preventDefault();
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Find clicked asset
+    let clickedAsset: CanvasAsset | null = null;
+    for (let i = assets.length - 1; i >= 0; i--) {
+      const asset = assets[i];
+      if (x >= asset.x && x <= asset.x + asset.width && 
+          y >= asset.y && y <= asset.y + asset.height) {
+        clickedAsset = asset;
+        break;
+      }
+    }
+
+    if (clickedAsset) {
+      // Show context menu at mouse position
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        assetId: clickedAsset.id
+      });
+      
+      // Select the asset
+      setAssets(prev => {
+        const updated = prev.map(asset => ({
+          ...asset,
+          selected: asset.id === clickedAsset?.id
+        }));
+        onAssetsChange?.(updated);
+        return updated;
+      });
+      setSelectedAssetId(clickedAsset.id);
+    }
+  }, [assets, onAssetsChange]);
+
+  // Handle delete from context menu
+  const handleDeleteAsset = useCallback((assetId: string) => {
+    setAssets(prev => {
+      const updated = prev.filter(asset => asset.id !== assetId);
+      onAssetsChange?.(updated);
+      return updated;
+    });
+    setLoadedImages(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(assetId);
+      return newMap;
+    });
+    setSelectedAssetId(null);
+    setContextMenu(null);
+    addToast('Image removed from canvas', 'success');
+  }, [onAssetsChange, addToast]);
+
+  // Handle mouse down for dragging and resizing
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
     const selectedAsset = assets.find(asset => asset.selected);
     if (!selectedAsset) return;
@@ -190,20 +344,26 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    if (x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
-        y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+    // Check if clicking on a resize handle
+    const handle = getResizeHandle(selectedAsset, x, y);
+    if (handle) {
+      setIsResizing(true);
+      setResizeHandle(handle);
+      setInitialAssetState({ ...selectedAsset });
+      setDragOffset({ x, y });
+    } else if (x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+               y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+      // Clicking on asset body - start dragging
       setIsDragging(true);
       setDragOffset({
         x: x - selectedAsset.x,
         y: y - selectedAsset.y
       });
     }
-  }, [assets]);
+  }, [assets, getResizeHandle]);
 
-  // Handle mouse move for dragging
+  // Handle mouse move for dragging and resizing
   const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
-    if (!isDragging || !selectedAssetId) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -211,25 +371,126 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    setAssets(prev => {
-      const updated = prev.map(asset => {
-        if (asset.id === selectedAssetId) {
-          return {
-            ...asset,
-            x: Math.max(0, Math.min(canvas.width - asset.width, x - dragOffset.x)),
-            y: Math.max(0, Math.min(canvas.height - asset.height, y - dragOffset.y))
-          };
+    // Update cursor based on what's being hovered over
+    if (!isDragging && !isResizing) {
+      const selectedAsset = assets.find(asset => asset.selected);
+      if (selectedAsset) {
+        const handle = getResizeHandle(selectedAsset, x, y);
+        if (handle) {
+          setCurrentCursor(getCursorStyle(handle));
+        } else if (x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+                   y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+          setCurrentCursor('move');
+        } else {
+          setCurrentCursor('default');
         }
-        return asset;
+      } else {
+        setCurrentCursor('default');
+      }
+    }
+
+    if (!selectedAssetId || (!isDragging && !isResizing)) return;
+
+    if (isDragging) {
+      // Handle dragging
+      setAssets(prev => {
+        const updated = prev.map(asset => {
+          if (asset.id === selectedAssetId) {
+            const displayWidth = canvas.offsetWidth;
+            const displayHeight = canvas.offsetHeight;
+            return {
+              ...asset,
+              x: Math.max(0, Math.min(displayWidth - asset.width, x - dragOffset.x)),
+              y: Math.max(0, Math.min(displayHeight - asset.height, y - dragOffset.y))
+            };
+          }
+          return asset;
+        });
+        onAssetsChange?.(updated);
+        return updated;
       });
-      onAssetsChange?.(updated);
-      return updated;
-    });
-  }, [isDragging, selectedAssetId, dragOffset, onAssetsChange]);
+    } else if (isResizing && resizeHandle && initialAssetState) {
+      // Handle resizing with aspect ratio preservation
+      const dx = x - dragOffset.x;
+      const dy = y - dragOffset.y;
+      
+      setAssets(prev => {
+        const updated = prev.map(asset => {
+          if (asset.id === selectedAssetId) {
+            let newAsset = { ...asset };
+            const minSize = 20; // Minimum size for assets
+            
+            // Calculate scale factor based on mouse movement
+            let scaleFactor: number;
+            let newWidth: number, newHeight: number;
+            
+            switch (resizeHandle) {
+              case 'tl': // Top-left
+                // Use the average of horizontal and vertical movement for more natural resize
+                scaleFactor = 1 - (Math.abs(dx) + Math.abs(dy)) / (initialAssetState.width + initialAssetState.height);
+                scaleFactor = Math.max(minSize / Math.max(initialAssetState.width, initialAssetState.height), scaleFactor);
+                newWidth = initialAssetState.width * scaleFactor;
+                newHeight = initialAssetState.height * scaleFactor;
+                newAsset.width = newWidth;
+                newAsset.height = newHeight;
+                newAsset.x = initialAssetState.x + (initialAssetState.width - newWidth);
+                newAsset.y = initialAssetState.y + (initialAssetState.height - newHeight);
+                break;
+              case 'tr': // Top-right
+                scaleFactor = 1 + (dx - dy) / (initialAssetState.width + initialAssetState.height);
+                scaleFactor = Math.max(minSize / Math.max(initialAssetState.width, initialAssetState.height), scaleFactor);
+                newWidth = initialAssetState.width * scaleFactor;
+                newHeight = initialAssetState.height * scaleFactor;
+                newAsset.width = newWidth;
+                newAsset.height = newHeight;
+                newAsset.x = initialAssetState.x;
+                newAsset.y = initialAssetState.y + (initialAssetState.height - newHeight);
+                break;
+              case 'bl': // Bottom-left
+                scaleFactor = 1 + (-dx + dy) / (initialAssetState.width + initialAssetState.height);
+                scaleFactor = Math.max(minSize / Math.max(initialAssetState.width, initialAssetState.height), scaleFactor);
+                newWidth = initialAssetState.width * scaleFactor;
+                newHeight = initialAssetState.height * scaleFactor;
+                newAsset.width = newWidth;
+                newAsset.height = newHeight;
+                newAsset.x = initialAssetState.x + (initialAssetState.width - newWidth);
+                newAsset.y = initialAssetState.y;
+                break;
+              case 'br': // Bottom-right
+                scaleFactor = 1 + (dx + dy) / (initialAssetState.width + initialAssetState.height);
+                scaleFactor = Math.max(minSize / Math.max(initialAssetState.width, initialAssetState.height), scaleFactor);
+                newWidth = initialAssetState.width * scaleFactor;
+                newHeight = initialAssetState.height * scaleFactor;
+                newAsset.width = newWidth;
+                newAsset.height = newHeight;
+                newAsset.x = initialAssetState.x;
+                newAsset.y = initialAssetState.y;
+                break;
+            }
+            
+            // Ensure asset stays within canvas bounds
+            const displayWidth = canvas.offsetWidth;
+            const displayHeight = canvas.offsetHeight;
+            newAsset.x = Math.max(0, Math.min(displayWidth - newAsset.width, newAsset.x));
+            newAsset.y = Math.max(0, Math.min(displayHeight - newAsset.height, newAsset.y));
+            
+            return newAsset;
+          }
+          return asset;
+        });
+        onAssetsChange?.(updated);
+        return updated;
+      });
+    }
+  }, [isDragging, isResizing, selectedAssetId, dragOffset, resizeHandle, initialAssetState, onAssetsChange, assets, getResizeHandle, getCursorStyle]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    setIsResizing(false);
+    setResizeHandle(null);
+    setInitialAssetState(null);
+    setCurrentCursor('default');
   }, []);
 
   // Draw canvas when assets or images change
@@ -242,7 +503,7 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     drop(node);
   }, [drop]);
 
-  // Auto-resize canvas to fit container
+  // Auto-resize canvas to fit container with proper DPI scaling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -252,11 +513,25 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
 
     const resizeCanvas = () => {
       const rect = container.getBoundingClientRect();
-      const width = rect.width - 32; // Account for padding
-      const height = rect.height - 32; // Account for padding
+      const displayWidth = rect.width - 32; // Account for padding
+      const displayHeight = rect.height - 32; // Account for padding
       
-      canvas.width = width;
-      canvas.height = height;
+      // Get device pixel ratio for high-DPI displays
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      
+      // Set actual canvas size (in pixels)
+      canvas.width = displayWidth * devicePixelRatio;
+      canvas.height = displayHeight * devicePixelRatio;
+      
+      // Set display size (CSS pixels)
+      canvas.style.width = displayWidth + 'px';
+      canvas.style.height = displayHeight + 'px';
+      
+      // Scale the drawing context to match device pixel ratio
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+      }
       
       // Redraw after resize
       drawCanvas();
@@ -279,15 +554,14 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
     >
       <canvas
         ref={canvasRef}
-        className="w-full h-full rounded-lg cursor-pointer"
+        className="rounded-lg cursor-pointer"
         style={{
-          width: '100%',
-          height: '100%',
           display: 'block',
           backgroundColor: 'transparent',
           pointerEvents: 'none'
         }}
         onClick={handleCanvasClick}
+        onContextMenu={handleContextMenu}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -297,8 +571,9 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
       {/* Invisible overlay for canvas interactions */}
       <div 
         className="absolute inset-0 pointer-events-auto"
-        style={{ zIndex: 1 }}
+        style={{ zIndex: 1, cursor: currentCursor }}
         onClick={handleCanvasClick}
+        onContextMenu={handleContextMenu}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -320,6 +595,25 @@ export default function PosterCanvas({ onAssetsChange }: PosterCanvasProps) {
           style={{ zIndex: 2 }}
         >
           <span className="text-gray-500 text-lg">Drop images here</span>
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white border border-gray-300 rounded-md shadow-lg py-1 z-50"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => handleDeleteAsset(contextMenu.assetId)}
+            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+          >
+            🗑️ Delete Image
+          </button>
         </div>
       )}
     </div>
