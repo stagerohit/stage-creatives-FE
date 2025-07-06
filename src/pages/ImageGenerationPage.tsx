@@ -209,8 +209,33 @@ export default function ImageGenerationPage() {
             contentService.getAIImagesByContentId(contentId).catch(() => [])
           ]);
 
-          setAllImages(Array.isArray(imagesResponse) ? imagesResponse : []);
-          setAllAIImages(Array.isArray(aiImagesResponse) ? aiImagesResponse : []);
+          // Sort images by creation date (newest first)
+          const sortedImages = (Array.isArray(imagesResponse) ? imagesResponse : [])
+            .sort((a: Image, b: Image) => {
+              const dateA = a.created_at || a.createdAt;
+              const dateB = b.created_at || b.createdAt;
+              if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              }
+              if (dateA && !dateB) return -1;
+              if (!dateA && dateB) return 1;
+              return 0;
+            });
+
+          const sortedAIImages = (Array.isArray(aiImagesResponse) ? aiImagesResponse : [])
+            .sort((a: AIImage, b: AIImage) => {
+              const dateA = a.created_at || a.createdAt;
+              const dateB = b.created_at || b.createdAt;
+              if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              }
+              if (dateA && !dateB) return -1;
+              if (!dateA && dateB) return 1;
+              return 0;
+            });
+
+          setAllImages(sortedImages);
+          setAllAIImages(sortedAIImages);
         }
       } catch (error) {
         console.error('Failed to fetch content:', error);

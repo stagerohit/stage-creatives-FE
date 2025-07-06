@@ -52,10 +52,24 @@ export default function PostersTab({ content }: PostersTabProps) {
         // API returns direct array of posters
         const posters = Array.isArray(response) ? response : [];
         
-        // Sort posters by creation date (earliest first)
-        const sortedPosters = posters.sort((a: Poster, b: Poster) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+        // Sort posters by creation date (newest first)
+        const sortedPosters = posters.sort((a: Poster, b: Poster) => {
+          // Get creation date from either created_at or createdAt
+          const dateA = a.created_at;
+          const dateB = b.created_at;
+          
+          // If both have dates, sort by date (newest first)
+          if (dateA && dateB) {
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+          }
+          
+          // If only one has a date, the one with date comes first
+          if (dateA && !dateB) return -1;
+          if (!dateA && dateB) return 1;
+          
+          // If neither has a date, maintain original order
+          return 0;
+        });
         
         console.log('Setting posters state with:', sortedPosters);
         setPosters(sortedPosters);

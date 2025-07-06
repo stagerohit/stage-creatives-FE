@@ -184,9 +184,46 @@ export default function PosterGenerationPage() {
             contentService.getTaglinesByContentId(contentId).catch(() => [])
           ]);
 
-          setAiImages(Array.isArray(aiImagesResponse) ? aiImagesResponse : []);
-          setTitleLogos(Array.isArray(titleLogosResponse) ? titleLogosResponse : []);
-          setTaglines(Array.isArray(taglinesResponse) ? taglinesResponse : []);
+          // Sort assets by creation date (newest first)
+          const sortedAIImages = (Array.isArray(aiImagesResponse) ? aiImagesResponse : [])
+            .sort((a: AIImage, b: AIImage) => {
+              const dateA = a.created_at || a.createdAt;
+              const dateB = b.created_at || b.createdAt;
+              if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              }
+              if (dateA && !dateB) return -1;
+              if (!dateA && dateB) return 1;
+              return 0;
+            });
+
+          const sortedTitleLogos = (Array.isArray(titleLogosResponse) ? titleLogosResponse : [])
+            .sort((a: TitleLogo, b: TitleLogo) => {
+              const dateA = a.created_at || a.createdAt;
+              const dateB = b.created_at || b.createdAt;
+              if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              }
+              if (dateA && !dateB) return -1;
+              if (!dateA && dateB) return 1;
+              return 0;
+            });
+
+          const sortedTaglines = (Array.isArray(taglinesResponse) ? taglinesResponse : [])
+            .sort((a: Tagline, b: Tagline) => {
+              const dateA = a.created_at || a.createdAt;
+              const dateB = b.created_at || b.createdAt;
+              if (dateA && dateB) {
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              }
+              if (dateA && !dateB) return -1;
+              if (!dateA && dateB) return 1;
+              return 0;
+            });
+
+          setAiImages(sortedAIImages);
+          setTitleLogos(sortedTitleLogos);
+          setTaglines(sortedTaglines);
         }
       } catch (error) {
         console.error('Failed to fetch content:', error);
@@ -268,8 +305,38 @@ export default function PosterGenerationPage() {
                 titleLogos={titleLogos}
                 taglines={taglines}
                 content={content}
-                onTitleLogoGenerated={(newLogo) => setTitleLogos(prev => [...prev, newLogo])}
-                onTaglineGenerated={(newTagline) => setTaglines(prev => [...prev, newTagline])}
+                onTitleLogoGenerated={(newLogo) => {
+                  setTitleLogos(prev => {
+                    const updated = [...prev, newLogo];
+                    // Sort by creation date (newest first)
+                    return updated.sort((a, b) => {
+                      const dateA = a.created_at || a.createdAt;
+                      const dateB = b.created_at || b.createdAt;
+                      if (dateA && dateB) {
+                        return new Date(dateB).getTime() - new Date(dateA).getTime();
+                      }
+                      if (dateA && !dateB) return -1;
+                      if (!dateA && dateB) return 1;
+                      return 0;
+                    });
+                  });
+                }}
+                onTaglineGenerated={(newTagline) => {
+                  setTaglines(prev => {
+                    const updated = [...prev, newTagline];
+                    // Sort by creation date (newest first)
+                    return updated.sort((a, b) => {
+                      const dateA = a.created_at || a.createdAt;
+                      const dateB = b.created_at || b.createdAt;
+                      if (dateA && dateB) {
+                        return new Date(dateB).getTime() - new Date(dateA).getTime();
+                      }
+                      if (dateA && !dateB) return -1;
+                      if (!dateA && dateB) return 1;
+                      return 0;
+                    });
+                  });
+                }}
               />
             </div>
 

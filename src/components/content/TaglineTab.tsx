@@ -58,10 +58,24 @@ export default function TaglineTab({ content }: TaglineTabProps) {
         // API returns direct array of taglines
         const taglines = Array.isArray(response) ? response : [];
         
-        // Sort taglines by creation date (earliest first)
-        const sortedTaglines = taglines.sort((a: Tagline, b: Tagline) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
+        // Sort taglines by creation date (newest first)
+        const sortedTaglines = taglines.sort((a: Tagline, b: Tagline) => {
+          // Get creation date from either created_at or createdAt
+          const dateA = a.created_at || a.createdAt;
+          const dateB = b.created_at || b.createdAt;
+          
+          // If both have dates, sort by date (newest first)
+          if (dateA && dateB) {
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+          }
+          
+          // If only one has a date, the one with date comes first
+          if (dateA && !dateB) return -1;
+          if (!dateA && dateB) return 1;
+          
+          // If neither has a date, maintain original order
+          return 0;
+        });
         
         console.log('Setting taglines state with:', sortedTaglines);
         setTaglines(sortedTaglines);
