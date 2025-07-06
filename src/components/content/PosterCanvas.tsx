@@ -19,9 +19,16 @@ export interface CanvasAsset {
 interface PosterCanvasProps {
   assets?: CanvasAsset[];
   onAssetsChange?: (assets: CanvasAsset[]) => void;
+  isGradientMode?: boolean;
+  onGradientAreaDefined?: (area: { startX: number, startY: number, endX: number, endY: number }) => void;
 }
 
-export default function PosterCanvas({ assets: externalAssets = [], onAssetsChange }: PosterCanvasProps) {
+export default function PosterCanvas({ 
+  assets: externalAssets = [], 
+  onAssetsChange, 
+  isGradientMode = false, 
+  onGradientAreaDefined 
+}: PosterCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [assets, setAssets] = useState<CanvasAsset[]>([]);
 
@@ -38,6 +45,12 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
   const [currentCursor, setCurrentCursor] = useState<string>('default');
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, assetId: string } | null>(null);
   const [loadedImages, setLoadedImages] = useState<Map<string, HTMLImageElement>>(new Map());
+  
+  // Gradient drawing state
+  const [isDrawingGradient, setIsDrawingGradient] = useState(false);
+  const [gradientArea, setGradientArea] = useState<{ startX: number, startY: number, endX: number, endY: number } | null>(null);
+  const [gradientStart, setGradientStart] = useState<{ x: number, y: number } | null>(null);
+  
   const { addToast } = useToast();
 
   // Handle keyboard events for deletion
@@ -403,7 +416,50 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
         }
       }
     });
-  }, [assets, loadedImages]);
+
+    // Draw gradient area overlay if in gradient mode
+    if (isGradientMode && gradientArea) {
+      const selectedAsset = assets.find(asset => asset.selected);
+      if (selectedAsset) {
+        ctx.save();
+        
+        // Convert relative coordinates to canvas coordinates within the selected asset
+        const assetStartX = selectedAsset.x + (gradientArea.startX / 100) * selectedAsset.width;
+        const assetStartY = selectedAsset.y + (gradientArea.startY / 100) * selectedAsset.height;
+        const assetEndX = selectedAsset.x + (gradientArea.endX / 100) * selectedAsset.width;
+        const assetEndY = selectedAsset.y + (gradientArea.endY / 100) * selectedAsset.height;
+        
+        // Draw gradient direction line
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(assetStartX, assetStartY);
+        ctx.lineTo(assetEndX, assetEndY);
+        ctx.stroke();
+        
+        // Draw start circle (green)
+        ctx.fillStyle = '#00ff00';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        ctx.beginPath();
+        ctx.arc(assetStartX, assetStartY, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Draw end circle (red)
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(assetEndX, assetEndY, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Reset shadow and line dash
+        ctx.shadowBlur = 0;
+        ctx.setLineDash([]);
+        
+        ctx.restore();
+      }
+    }
+  }, [assets, loadedImages, isGradientMode, gradientArea]);
 
   // Handle canvas clicks
   const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
@@ -416,6 +472,11 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+
+    // If in gradient mode, don't handle normal selection
+    if (isGradientMode) {
+      return;
+    }
 
     // Find clicked asset (from top to bottom)
     let clickedAsset: CanvasAsset | null = null;
@@ -439,7 +500,7 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
     });
 
     setSelectedAssetId(clickedAsset?.id || null);
-  }, [assets, onAssetsChange]);
+  }, [assets, onAssetsChange, isGradientMode]);
 
   // Handle right-click for context menu
   const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
@@ -503,15 +564,38 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
 
   // Handle mouse down for dragging and resizing
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
-    const selectedAsset = assets.find(asset => asset.selected);
-    if (!selectedAsset) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
+
+    // Handle gradient drawing mode
+    if (isGradientMode) {
+      const selectedAsset = assets.find(asset => asset.selected);
+      if (selectedAsset && 
+          x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+          y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+        
+        // Convert to relative coordinates within the asset
+        const relativeX = ((x - selectedAsset.x) / selectedAsset.width) * 100;
+        const relativeY = ((y - selectedAsset.y) / selectedAsset.height) * 100;
+        
+        setIsDrawingGradient(true);
+        setGradientStart({ x: relativeX, y: relativeY });
+        setGradientArea({
+          startX: relativeX,
+          startY: relativeY,
+          endX: relativeX,
+          endY: relativeY
+        });
+      }
+      return;
+    }
+
+    const selectedAsset = assets.find(asset => asset.selected);
+    if (!selectedAsset) return;
 
     // Check if clicking on a resize handle
     const handle = getResizeHandle(selectedAsset, x, y);
@@ -529,7 +613,7 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
         y: y - selectedAsset.y
       });
     }
-  }, [assets, getResizeHandle]);
+  }, [assets, getResizeHandle, isGradientMode]);
 
   // Handle mouse move for dragging and resizing
   const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement | HTMLDivElement>) => {
@@ -540,21 +624,53 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
+    // Handle gradient drawing mode
+    if (isGradientMode && isDrawingGradient && gradientStart) {
+      const selectedAsset = assets.find(asset => asset.selected);
+      if (selectedAsset && 
+          x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+          y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+        
+        // Convert to relative coordinates within the asset
+        const relativeX = ((x - selectedAsset.x) / selectedAsset.width) * 100;
+        const relativeY = ((y - selectedAsset.y) / selectedAsset.height) * 100;
+        
+        setGradientArea({
+          startX: gradientStart.x,
+          startY: gradientStart.y,
+          endX: relativeX,
+          endY: relativeY
+        });
+      }
+      return;
+    }
+
     // Update cursor based on what's being hovered over
     if (!isDragging && !isResizing) {
-      const selectedAsset = assets.find(asset => asset.selected);
-      if (selectedAsset) {
-        const handle = getResizeHandle(selectedAsset, x, y);
-        if (handle) {
-          setCurrentCursor(getCursorStyle(handle));
-        } else if (x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
-                   y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
-          setCurrentCursor('move');
+      if (isGradientMode) {
+        const selectedAsset = assets.find(asset => asset.selected);
+        if (selectedAsset && 
+            x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+            y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+          setCurrentCursor('crosshair');
         } else {
           setCurrentCursor('default');
         }
       } else {
-        setCurrentCursor('default');
+        const selectedAsset = assets.find(asset => asset.selected);
+        if (selectedAsset) {
+          const handle = getResizeHandle(selectedAsset, x, y);
+          if (handle) {
+            setCurrentCursor(getCursorStyle(handle));
+          } else if (x >= selectedAsset.x && x <= selectedAsset.x + selectedAsset.width && 
+                     y >= selectedAsset.y && y <= selectedAsset.y + selectedAsset.height) {
+            setCurrentCursor('move');
+          } else {
+            setCurrentCursor('default');
+          }
+        } else {
+          setCurrentCursor('default');
+        }
       }
     }
 
@@ -655,12 +771,19 @@ export default function PosterCanvas({ assets: externalAssets = [], onAssetsChan
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
+    // Handle gradient drawing completion
+    if (isGradientMode && isDrawingGradient && gradientArea) {
+      setIsDrawingGradient(false);
+      setGradientStart(null);
+      onGradientAreaDefined?.(gradientArea);
+    }
+    
     setIsDragging(false);
     setIsResizing(false);
     setResizeHandle(null);
     setInitialAssetState(null);
     setCurrentCursor('default');
-  }, []);
+  }, [isGradientMode, isDrawingGradient, gradientArea, onGradientAreaDefined]);
 
   // Draw canvas when assets or images change
   useEffect(() => {

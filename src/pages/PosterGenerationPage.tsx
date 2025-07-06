@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/toast';
 import PosterAssetTabs from '@/components/content/PosterAssetTabs';
 import PosterCanvas, { CanvasAsset } from '@/components/content/PosterCanvas';
 import ImageEditingTools from '@/components/content/ImageEditingTools';
+import AdvancedGradientControls from '@/components/content/AdvancedGradientControls';
+import MaterialDesignControls from '@/components/content/MaterialDesignControls';
 import type { Content, AIImage, TitleLogo, Tagline } from '@/types/content';
 
 export default function PosterGenerationPage() {
@@ -19,7 +21,13 @@ export default function PosterGenerationPage() {
   const [taglines, setTaglines] = useState<Tagline[]>([]);
   const [canvasAssets, setCanvasAssets] = useState<CanvasAsset[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<CanvasAsset | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isGradientActive, setIsGradientActive] = useState(false);
+  const [gradientArea, setGradientArea] = useState<{ startX: number, startY: number, endX: number, endY: number } | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // Undo/Redo history
+  const [history, setHistory] = useState<CanvasAsset[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Update selected asset when canvas assets change
   useEffect(() => {
@@ -70,6 +78,84 @@ export default function PosterGenerationPage() {
     console.log('Asset action:', assetId, action);
     // Handle various asset actions here
   };
+
+  // Handle advanced gradient application
+  const handleAdvancedGradientApply = (config: any) => {
+    if (!selectedAsset) return;
+    
+    const newEffects = {
+      ...selectedAsset.effects,
+      advancedGradient: config
+    };
+    
+    const updatedAsset = { ...selectedAsset, effects: newEffects };
+    handleAssetUpdate(updatedAsset);
+    addToast('Advanced gradient applied', 'success');
+  };
+
+  // Handle gradient area definition from canvas
+  const handleGradientAreaDefined = (area: { startX: number, startY: number, endX: number, endY: number }) => {
+    // Pass the gradient area to the advanced gradient controls
+    setGradientArea(area);
+    console.log('Gradient area defined:', area);
+    addToast('Gradient area defined - adjust colors in the gradient panel', 'info');
+  };
+
+  // Add to history
+  const addToHistory = (assets: CanvasAsset[]) => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(JSON.parse(JSON.stringify(assets))); // Deep copy
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
+  // Undo function
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setCanvasAssets(JSON.parse(JSON.stringify(history[newIndex])));
+      addToast('Undo successful', 'info');
+    }
+  };
+
+  // Redo function
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setCanvasAssets(JSON.parse(JSON.stringify(history[newIndex])));
+      addToast('Redo successful', 'info');
+    }
+  };
+
+  // Track canvas changes for undo/redo
+  useEffect(() => {
+    if (canvasAssets.length > 0 || history.length === 0) {
+      const currentStateHash = JSON.stringify(canvasAssets.map(a => ({
+        id: a.id,
+        effects: a.effects,
+        x: a.x,
+        y: a.y,
+        width: a.width,
+        height: a.height
+      })));
+      
+      const lastStateHash = history[historyIndex] ? JSON.stringify(history[historyIndex].map(a => ({
+        id: a.id,
+        effects: a.effects,
+        x: a.x,
+        y: a.y,
+        width: a.width,
+        height: a.height
+      }))) : '';
+      
+      // Only add to history if state actually changed
+      if (currentStateHash !== lastStateHash) {
+        addToHistory(canvasAssets);
+      }
+    }
+  }, [canvasAssets]);
 
   useEffect(() => {
     const fetchContentAndAssets = async () => {
@@ -124,7 +210,47 @@ export default function PosterGenerationPage() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="h-screen bg-gray-50">
+      <div className="h-screen bg-gray-50 relative">
+        {/* Top-right Controls */}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          {/* Undo/Redo Buttons */}
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={handleUndo}
+              disabled={historyIndex <= 0}
+              className={`p-2 rounded-lg font-medium transition-colors shadow-lg flex items-center gap-1 ${
+                historyIndex <= 0 
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+              title="Undo (Ctrl+Z)"
+            >
+              <span className="material-icons text-sm">undo</span>
+            </button>
+            <button 
+              onClick={handleRedo}
+              disabled={historyIndex >= history.length - 1}
+              className={`p-2 rounded-lg font-medium transition-colors shadow-lg flex items-center gap-1 ${
+                historyIndex >= history.length - 1 
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
+              title="Redo (Ctrl+Y)"
+            >
+              <span className="material-icons text-sm">redo</span>
+            </button>
+          </div>
+          
+          {/* Save Button */}
+          <button 
+            onClick={handleSavePoster}
+            className="px-3 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors shadow-lg flex items-center gap-1"
+          >
+            <span className="material-icons text-sm">save</span>
+            Save
+          </button>
+        </div>
+
         <div className="h-full p-4">
           <div className="flex h-full gap-2">
             {/* Left Side - Section 1A (30% width) */}
@@ -140,40 +266,48 @@ export default function PosterGenerationPage() {
             {/* Right Side - 70% width */}
             <div className="w-[70%] flex flex-col gap-2">
               {/* Section 2A - Canvas (70% height) */}
-              <div className="h-[70%] bg-white rounded-lg shadow p-4 flex flex-col">
+              <div className="h-[70%] bg-white rounded-lg shadow p-4 flex flex-col relative">
                 <h3 className="text-lg font-semibold mb-4">Canvas</h3>
-                <div className="flex-1 min-h-0">
-                  <PosterCanvas 
-                    assets={canvasAssets}
-                    onAssetsChange={setCanvasAssets} 
-                  />
+                <div className="flex-1 min-h-0 flex">
+                  {/* Canvas Area - shrinks when gradient active */}
+                  <div className={`flex-1 min-h-0 transition-all duration-300 ${isGradientActive ? 'mr-2' : ''}`}>
+                    <PosterCanvas 
+                      assets={canvasAssets}
+                      onAssetsChange={setCanvasAssets}
+                      isGradientMode={isGradientActive}
+                      onGradientAreaDefined={handleGradientAreaDefined}
+                    />
+                  </div>
+                  
+                  {/* Gradient Controls Overlay - 15% width when active */}
+                  {isGradientActive && (
+                    <div className="w-[15%] bg-white border-l border-gray-200 p-2 overflow-y-auto">
+                      <AdvancedGradientControls
+                        selectedAsset={selectedAsset}
+                        onApply={handleAdvancedGradientApply}
+                        onDone={() => setIsGradientActive(false)}
+                        gradientArea={gradientArea}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Bottom Section (30% height) */}
-              <div className="h-[30%] flex gap-2">
-                {/* Section 3A - Tools (80% width) */}
-                <div className="w-[80%] bg-white rounded-lg shadow overflow-hidden">
-                  <ImageEditingTools
-                    selectedAsset={selectedAsset}
-                    onAssetUpdate={handleAssetUpdate}
-                    onApply={handleApplyEffects}
-                    onCancel={handleCancelEffects}
-                    onEffectChange={handleEffectChange}
-                    onAssetAction={handleAssetAction}
-                    canvasRef={canvasRef}
-                  />
-                </div>
-
-                {/* Save Button (20% width) */}
-                <div className="w-[20%] bg-white rounded-lg shadow p-4 flex items-center justify-center">
-                  <button 
-                    onClick={handleSavePoster}
-                    className="w-full h-full bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                  >
-                    Save
-                  </button>
-                </div>
+              {/* Bottom Section - Image Controls (30% height, full width) */}
+              <div className="h-[30%] bg-white rounded-lg shadow overflow-hidden">
+                <MaterialDesignControls
+                  selectedAsset={selectedAsset}
+                  onAssetUpdate={handleAssetUpdate}
+                  onEffectChange={handleEffectChange}
+                  onAssetAction={handleAssetAction}
+                  onGradientToggle={() => setIsGradientActive(!isGradientActive)}
+                  isGradientActive={isGradientActive}
+                  canvasRef={canvasRef}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  canUndo={historyIndex > 0}
+                  canRedo={historyIndex < history.length - 1}
+                />
               </div>
             </div>
           </div>
