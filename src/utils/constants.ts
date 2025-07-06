@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
   GENERATE_AI_IMAGE: '/ai-images/generate',
   GENERATE_TITLE_LOGO: '/title-logos/generate',
   GENERATE_TAGLINE: '/taglines/generate',
+  UPLOAD_POSTER: '/posters/upload',
 } as const;
 
 export const COLORS = {
@@ -43,4 +44,8 @@ export const CHANNEL_OPTIONS = [
   { value: 'twitter', label: 'Twitter' },
   { value: 'facebook', label: 'Facebook' },
   { value: 'youtube', label: 'YouTube' },
+] as const;
+
+export const USE_CASE_OPTIONS = [
+  { value: 'social_media_organic', label: 'Social Media Organic' },
 ] as const; 

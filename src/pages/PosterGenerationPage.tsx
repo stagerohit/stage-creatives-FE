@@ -9,6 +9,7 @@ import PosterCanvas, { CanvasAsset } from '@/components/content/PosterCanvas';
 import ImageEditingTools from '@/components/content/ImageEditingTools';
 import AdvancedGradientControls from '@/components/content/AdvancedGradientControls';
 import MaterialDesignControls from '@/components/content/MaterialDesignControls';
+import PosterSaveModal from '@/components/content/PosterSaveModal';
 import type { Content, AIImage, TitleLogo, Tagline } from '@/types/content';
 
 export default function PosterGenerationPage() {
@@ -23,7 +24,8 @@ export default function PosterGenerationPage() {
   const [selectedAsset, setSelectedAsset] = useState<CanvasAsset | null>(null);
   const [isGradientActive, setIsGradientActive] = useState(false);
   const [gradientArea, setGradientArea] = useState<{ startX: number, startY: number, endX: number, endY: number } | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Undo/Redo history
   const [history, setHistory] = useState<CanvasAsset[][]>([]);
@@ -36,9 +38,14 @@ export default function PosterGenerationPage() {
   }, [canvasAssets]);
 
   const handleSavePoster = () => {
-    // TODO: Implement save functionality
-    console.log('Saving poster with assets:', canvasAssets);
-    addToast('Save functionality will be implemented later', 'info');
+    // Open the save modal
+    setIsSaveModalOpen(true);
+  };
+
+  const handleSaveComplete = () => {
+    // This function is called after successful save
+    // Close the modal (already handled by the modal)
+    setIsSaveModalOpen(false);
   };
 
   // Handle asset updates from image editing tools
@@ -279,6 +286,7 @@ export default function PosterGenerationPage() {
                       onAssetsChange={setCanvasAssets}
                       isGradientMode={isGradientActive}
                       onGradientAreaDefined={handleGradientAreaDefined}
+                      canvasRef={canvasRef}
                     />
                   </div>
                   
@@ -316,6 +324,16 @@ export default function PosterGenerationPage() {
           </div>
         </div>
       </div>
+              {content && (
+          <PosterSaveModal
+            content={content}
+            isOpen={isSaveModalOpen}
+            onClose={() => setIsSaveModalOpen(false)}
+            onSave={handleSaveComplete}
+            canvasAssets={canvasAssets}
+            canvasRef={canvasRef}
+          />
+        )}
     </DndProvider>
   );
 } 

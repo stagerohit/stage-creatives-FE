@@ -21,15 +21,18 @@ interface PosterCanvasProps {
   onAssetsChange?: (assets: CanvasAsset[]) => void;
   isGradientMode?: boolean;
   onGradientAreaDefined?: (area: { startX: number, startY: number, endX: number, endY: number }) => void;
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
 export default function PosterCanvas({ 
   assets: externalAssets = [], 
   onAssetsChange, 
   isGradientMode = false, 
-  onGradientAreaDefined 
+  onGradientAreaDefined,
+  canvasRef: externalCanvasRef
 }: PosterCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const internalCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = externalCanvasRef || internalCanvasRef;
   const [assets, setAssets] = useState<CanvasAsset[]>([]);
 
   // Sync internal assets with external assets prop
@@ -153,8 +156,8 @@ export default function PosterCanvas({
     const fullImageUrl = item.src.startsWith('http') ? item.src : `${API_BASE_URL}${item.src}`;
     
     const img = new Image();
-    // Remove crossOrigin to avoid CORS issues
-    // img.crossOrigin = 'anonymous';
+    // Don't set crossOrigin here to allow images to load
+    // We'll handle CORS in the save modal when capturing canvas
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
       const maxWidth = 200;
