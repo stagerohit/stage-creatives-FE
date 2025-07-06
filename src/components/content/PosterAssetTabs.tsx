@@ -3,6 +3,7 @@ import { useDrag } from 'react-dnd';
 import { Button } from '@/components/ui/button';
 import { API_BASE_URL, COLORS } from '@/utils/constants';
 import TitleLogoGenerationPopup from './TitleLogoGenerationPopup';
+import TaglineGenerationPopup from './TaglineGenerationPopup';
 import type { AIImage, TitleLogo, Tagline, Content } from '@/types/content';
 
 interface PosterAssetTabsProps {
@@ -11,6 +12,7 @@ interface PosterAssetTabsProps {
   taglines: Tagline[];
   content?: Content;
   onTitleLogoGenerated?: (logo: TitleLogo) => void;
+  onTaglineGenerated?: (tagline: Tagline) => void;
 }
 
 // Draggable Image Component
@@ -60,10 +62,12 @@ export default function PosterAssetTabs({
   titleLogos, 
   taglines, 
   content, 
-  onTitleLogoGenerated 
+  onTitleLogoGenerated,
+  onTaglineGenerated 
 }: PosterAssetTabsProps) {
   const [activeTab, setActiveTab] = useState<'ai-images' | 'title-logos' | 'taglines'>('ai-images');
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isTitleLogoPopupOpen, setIsTitleLogoPopupOpen] = useState(false);
+  const [isTaglinePopupOpen, setIsTaglinePopupOpen] = useState(false);
 
   // Handle logo generation
   const handleLogoGenerated = (newLogo: TitleLogo) => {
@@ -72,7 +76,17 @@ export default function PosterAssetTabs({
 
   // Handle create title logo button click
   const handleCreateTitleLogo = () => {
-    setIsPopupOpen(true);
+    setIsTitleLogoPopupOpen(true);
+  };
+
+  // Handle tagline generation
+  const handleTaglineGenerated = (newTagline: Tagline) => {
+    onTaglineGenerated?.(newTagline);
+  };
+
+  // Handle create tagline button click
+  const handleCreateTagline = () => {
+    setIsTaglinePopupOpen(true);
   };
 
   const renderTabContent = () => {
@@ -137,22 +151,38 @@ export default function PosterAssetTabs({
 
       case 'taglines':
         return (
-          <div className="grid grid-cols-2 gap-2">
-            {taglines.map((tagline, index) => (
-              <DraggableImage
-                key={tagline.tagline_id || tagline._id || index}
-                id={tagline.tagline_id || tagline._id || `tagline-${index}`}
-                src={tagline.tagline_url}
-                alt={`Tagline ${index + 1}`}
-                type="tagline"
-                data={tagline}
-              />
-            ))}
-            {taglines.length === 0 && (
-              <div className="col-span-2 text-center text-gray-500 py-8">
-                No taglines available
+          <div className="space-y-4">
+            {/* Create Tagline Button */}
+            {content && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleCreateTagline}
+                  className="px-4 py-2 text-sm font-medium"
+                  style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
+                >
+                  Create Tagline
+                </Button>
               </div>
             )}
+            
+            {/* Taglines Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {taglines.map((tagline, index) => (
+                <DraggableImage
+                  key={tagline.tagline_id || tagline._id || index}
+                  id={tagline.tagline_id || tagline._id || `tagline-${index}`}
+                  src={tagline.tagline_url}
+                  alt={`Tagline ${index + 1}`}
+                  type="tagline"
+                  data={tagline}
+                />
+              ))}
+              {taglines.length === 0 && (
+                <div className="col-span-2 text-center text-gray-500 py-4">
+                  No taglines available
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -206,9 +236,19 @@ export default function PosterAssetTabs({
       {content && (
         <TitleLogoGenerationPopup
           content={content}
-          isOpen={isPopupOpen}
-          onClose={() => setIsPopupOpen(false)}
+          isOpen={isTitleLogoPopupOpen}
+          onClose={() => setIsTitleLogoPopupOpen(false)}
           onLogoGenerated={handleLogoGenerated}
+        />
+      )}
+
+      {/* Tagline Generation Popup */}
+      {content && (
+        <TaglineGenerationPopup
+          content={content}
+          isOpen={isTaglinePopupOpen}
+          onClose={() => setIsTaglinePopupOpen(false)}
+          onTaglineGenerated={handleTaglineGenerated}
         />
       )}
     </div>

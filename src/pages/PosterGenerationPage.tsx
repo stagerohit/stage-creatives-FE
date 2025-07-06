@@ -262,6 +262,7 @@ export default function PosterGenerationPage() {
                 taglines={taglines}
                 content={content}
                 onTitleLogoGenerated={(newLogo) => setTitleLogos(prev => [...prev, newLogo])}
+                onTaglineGenerated={(newTagline) => setTaglines(prev => [...prev, newTagline])}
               />
             </div>
 

@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { contentService } from '@/services/api';
 import { API_BASE_URL, COLORS, DIMENSION_OPTIONS, CHANNEL_OPTIONS } from '@/utils/constants';
+import TaglineGenerationPopup from './TaglineGenerationPopup';
 import type { Content, Tagline, ApiError } from '@/types/content';
 
 interface TaglineTabProps {
@@ -14,6 +15,7 @@ export default function TaglineTab({ content }: TaglineTabProps) {
   const [taglines, setTaglines] = useState<Tagline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   
   // Placeholder state for dropdowns (no functionality yet)
   const [selectedDimension, setSelectedDimension] = useState<string>('');
@@ -22,6 +24,16 @@ export default function TaglineTab({ content }: TaglineTabProps) {
   // Get content ID from content object
   const getContentId = () => {
     return content.content_id || content.id || content._id || content.oldContentId?.toString() || '';
+  };
+
+  // Handle new tagline generation
+  const handleTaglineGenerated = (newTagline: Tagline) => {
+    setTaglines(prev => [...prev, newTagline]);
+  };
+
+  // Handle create tagline button click
+  const handleCreateTagline = () => {
+    setIsPopupOpen(true);
   };
 
   useEffect(() => {
@@ -142,10 +154,7 @@ export default function TaglineTab({ content }: TaglineTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create tagline functionality
-              console.log('Create Tagline clicked');
-            }}
+            onClick={handleCreateTagline}
           >
             Create Tagline
           </Button>
@@ -198,10 +207,7 @@ export default function TaglineTab({ content }: TaglineTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create tagline functionality
-              console.log('Create Tagline clicked');
-            }}
+            onClick={handleCreateTagline}
           >
             Create Tagline
           </Button>
@@ -220,10 +226,7 @@ export default function TaglineTab({ content }: TaglineTabProps) {
             <Button 
               className="font-semibold"
               style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-              onClick={() => {
-                // Placeholder for create tagline functionality
-                console.log('Create Tagline clicked');
-              }}
+              onClick={handleCreateTagline}
             >
               Create First Tagline
             </Button>
@@ -269,10 +272,7 @@ export default function TaglineTab({ content }: TaglineTabProps) {
         <Button 
           className="font-semibold"
           style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-          onClick={() => {
-            // Placeholder for create tagline functionality
-            console.log('Create Tagline clicked');
-          }}
+          onClick={handleCreateTagline}
         >
           Create Tagline
         </Button>
@@ -311,6 +311,14 @@ export default function TaglineTab({ content }: TaglineTabProps) {
           </div>
         ))}
       </div>
+
+      {/* Tagline Generation Popup */}
+      <TaglineGenerationPopup
+        content={content}
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        onTaglineGenerated={handleTaglineGenerated}
+      />
     </div>
   );
 } 

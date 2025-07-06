@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   UPLOAD_VIDEOS: '/videos/upload',
   GENERATE_AI_IMAGE: '/ai-images/generate',
   GENERATE_TITLE_LOGO: '/title-logos/generate',
+  GENERATE_TAGLINE: '/taglines/generate',
 } as const;
 
 export const COLORS = {
