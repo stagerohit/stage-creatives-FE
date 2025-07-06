@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useDrag } from 'react-dnd';
-import { API_BASE_URL } from '@/utils/constants';
-import type { AIImage, TitleLogo, Tagline } from '@/types/content';
+import { Button } from '@/components/ui/button';
+import { API_BASE_URL, COLORS } from '@/utils/constants';
+import TitleLogoGenerationPopup from './TitleLogoGenerationPopup';
+import type { AIImage, TitleLogo, Tagline, Content } from '@/types/content';
 
 interface PosterAssetTabsProps {
   aiImages: AIImage[];
   titleLogos: TitleLogo[];
   taglines: Tagline[];
+  content?: Content;
+  onTitleLogoGenerated?: (logo: TitleLogo) => void;
 }
 
 // Draggable Image Component
@@ -51,8 +55,25 @@ function DraggableImage({ id, src, alt, type, data }: DraggableImageProps) {
   );
 }
 
-export default function PosterAssetTabs({ aiImages, titleLogos, taglines }: PosterAssetTabsProps) {
+export default function PosterAssetTabs({ 
+  aiImages, 
+  titleLogos, 
+  taglines, 
+  content, 
+  onTitleLogoGenerated 
+}: PosterAssetTabsProps) {
   const [activeTab, setActiveTab] = useState<'ai-images' | 'title-logos' | 'taglines'>('ai-images');
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  // Handle logo generation
+  const handleLogoGenerated = (newLogo: TitleLogo) => {
+    onTitleLogoGenerated?.(newLogo);
+  };
+
+  // Handle create title logo button click
+  const handleCreateTitleLogo = () => {
+    setIsPopupOpen(true);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -79,22 +100,38 @@ export default function PosterAssetTabs({ aiImages, titleLogos, taglines }: Post
 
       case 'title-logos':
         return (
-          <div className="grid grid-cols-2 gap-2">
-            {titleLogos.map((logo, index) => (
-              <DraggableImage
-                key={logo.title_logo_id || logo._id || index}
-                id={logo.title_logo_id || logo._id || `logo-${index}`}
-                src={logo.title_logo_url}
-                alt={`Title Logo ${index + 1}`}
-                type="title-logo"
-                data={logo}
-              />
-            ))}
-            {titleLogos.length === 0 && (
-              <div className="col-span-2 text-center text-gray-500 py-8">
-                No title logos available
+          <div className="space-y-4">
+            {/* Create Title Logo Button */}
+            {content && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={handleCreateTitleLogo}
+                  className="px-4 py-2 text-sm font-medium"
+                  style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
+                >
+                  Create Title Logo
+                </Button>
               </div>
             )}
+            
+            {/* Title Logos Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              {titleLogos.map((logo, index) => (
+                <DraggableImage
+                  key={logo.title_logo_id || logo._id || index}
+                  id={logo.title_logo_id || logo._id || `logo-${index}`}
+                  src={logo.title_logo_url}
+                  alt={`Title Logo ${index + 1}`}
+                  type="title-logo"
+                  data={logo}
+                />
+              ))}
+              {titleLogos.length === 0 && (
+                <div className="col-span-2 text-center text-gray-500 py-4">
+                  No title logos available
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -164,6 +201,16 @@ export default function PosterAssetTabs({ aiImages, titleLogos, taglines }: Post
       <div className="flex-1 overflow-auto">
         {renderTabContent()}
       </div>
+
+      {/* Title Logo Generation Popup */}
+      {content && (
+        <TitleLogoGenerationPopup
+          content={content}
+          isOpen={isPopupOpen}
+          onClose={() => setIsPopupOpen(false)}
+          onLogoGenerated={handleLogoGenerated}
+        />
+      )}
     </div>
   );
 } 

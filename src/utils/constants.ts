@@ -14,6 +14,7 @@ export const API_ENDPOINTS = {
   GET_VIDEOS_BY_CONTENT: '/videos/content',
   UPLOAD_VIDEOS: '/videos/upload',
   GENERATE_AI_IMAGE: '/ai-images/generate',
+  GENERATE_TITLE_LOGO: '/title-logos/generate',
 } as const;
 
 export const COLORS = {

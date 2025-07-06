@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { contentService } from '@/services/api';
 import { API_BASE_URL, COLORS, DIMENSION_OPTIONS, CHANNEL_OPTIONS } from '@/utils/constants';
+import TitleLogoGenerationPopup from './TitleLogoGenerationPopup';
 import type { Content, TitleLogo, ApiError } from '@/types/content';
 
 interface TitleLogoTabProps {
@@ -14,6 +15,7 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
   const [titleLogos, setTitleLogos] = useState<TitleLogo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   
   // Placeholder state for dropdowns (no functionality yet)
   const [selectedDimension, setSelectedDimension] = useState<string>('');
@@ -22,6 +24,16 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
   // Get content ID from content object
   const getContentId = () => {
     return content.content_id || content.id || content._id || content.oldContentId?.toString() || '';
+  };
+
+  // Handle new logo generation
+  const handleLogoGenerated = (newLogo: TitleLogo) => {
+    setTitleLogos(prev => [...prev, newLogo]);
+  };
+
+  // Handle create title logo button click
+  const handleCreateTitleLogo = () => {
+    setIsPopupOpen(true);
   };
 
   useEffect(() => {
@@ -149,10 +161,7 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
           <Button 
             className="font-semibold"
             style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-            onClick={() => {
-              // Placeholder for create title logo functionality
-              console.log('Create Title Logo clicked');
-            }}
+            onClick={handleCreateTitleLogo}
           >
             Create Title Logo
           </Button>
@@ -227,10 +236,7 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
             <Button 
               className="font-semibold"
               style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-              onClick={() => {
-                // Placeholder for create title logo functionality
-                console.log('Create Title Logo clicked');
-              }}
+              onClick={handleCreateTitleLogo}
             >
               Create First Title Logo
             </Button>
@@ -276,10 +282,7 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
         <Button 
           className="font-semibold"
           style={{ backgroundColor: COLORS.SECONDARY, color: 'white' }}
-          onClick={() => {
-            // Placeholder for create title logo functionality
-            console.log('Create Title Logo clicked');
-          }}
+          onClick={handleCreateTitleLogo}
         >
           Create Title Logo
         </Button>
@@ -327,6 +330,14 @@ export default function TitleLogoTab({ content }: TitleLogoTabProps) {
           </div>
         ))}
       </div>
+
+      {/* Title Logo Generation Popup */}
+      <TitleLogoGenerationPopup
+        content={content}
+        isOpen={isPopupOpen}
+        onClose={() => setIsPopupOpen(false)}
+        onLogoGenerated={handleLogoGenerated}
+      />
     </div>
   );
 } 

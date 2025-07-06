@@ -260,6 +260,8 @@ export default function PosterGenerationPage() {
                 aiImages={aiImages}
                 titleLogos={titleLogos}
                 taglines={taglines}
+                content={content}
+                onTitleLogoGenerated={(newLogo) => setTitleLogos(prev => [...prev, newLogo])}
               />
             </div>
 
