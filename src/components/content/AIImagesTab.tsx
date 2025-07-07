@@ -137,7 +137,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
         <div className="flex justify-between items-center">
           <div className="flex gap-4">
             <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Dimension" />
               </SelectTrigger>
               <SelectContent>
@@ -150,7 +150,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
             </Select>
             
             <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Channel" />
               </SelectTrigger>
               <SelectContent>
@@ -190,7 +190,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
         <div className="flex justify-between items-center">
           <div className="flex gap-4">
             <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Dimension" />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +203,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
             </Select>
             
             <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32" style={{ backgroundColor: 'white' }}>
                 <SelectValue placeholder="Channel" />
               </SelectTrigger>
               <SelectContent>
@@ -255,7 +255,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
       <div className="flex justify-between items-center">
         <div className="flex gap-4">
           <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" style={{ backgroundColor: 'white' }}>
               <SelectValue placeholder="Dimension" />
             </SelectTrigger>
             <SelectContent>
@@ -268,7 +268,7 @@ export default function AIImagesTab({ content }: AIImagesTabProps) {
           </Select>
           
           <Select value={selectedChannel} onValueChange={setSelectedChannel}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32" style={{ backgroundColor: 'white' }}>
               <SelectValue placeholder="Channel" />
             </SelectTrigger>
             <SelectContent>

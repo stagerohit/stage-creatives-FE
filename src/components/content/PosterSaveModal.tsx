@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
-import { API_BASE_URL, API_ENDPOINTS, CHANNEL_OPTIONS, DIMENSION_OPTIONS, USE_CASE_OPTIONS, COLORS } from '@/utils/constants';
+import { 
+  API_BASE_URL, 
+  API_ENDPOINTS, 
+  COLORS, 
+  DIMENSION_OPTIONS, 
+  CHANNEL_OPTIONS, 
+  USE_CASE_OPTIONS,
+  type DimensionValue,
+  isValidDimensionValue 
+} from '@/utils/constants';
 import type { Content } from '@/types/content';
 import type { CanvasAsset } from '@/components/content/PosterCanvas';
 
@@ -266,6 +275,12 @@ export default function PosterSaveModal({
       return;
     }
 
+    // Validate dimension value before sending to API
+    if (!isValidDimensionValue(selectedDimension)) {
+      setValidationErrors({ dimension: 'Invalid dimension selected' });
+      return;
+    }
+
     try {
       setIsSaving(true);
 
@@ -279,12 +294,12 @@ export default function PosterSaveModal({
         throw new Error('Content ID is required');
       }
       
-      // Create form data with just the basic required fields
+      // Create form data with properly typed dimension value
       const formData = new FormData();
       formData.append('content_id', contentId);
       formData.append('slug', content.slug || '');
       formData.append('channel', selectedChannel);
-      formData.append('dimension', selectedDimension);
+      formData.append('dimension', selectedDimension as DimensionValue);
       formData.append('use_case', selectedUseCase);
       formData.append('poster', imageBlob, 'poster.png');
 
@@ -358,7 +373,13 @@ export default function PosterSaveModal({
               Channel <span className="text-red-500">*</span>
             </label>
             <Select value={selectedChannel} onValueChange={setSelectedChannel} disabled={isSaving}>
-              <SelectTrigger className={`w-full ${validationErrors.channel ? 'border-red-500' : ''}`}>
+              <SelectTrigger 
+                className="w-full"
+                style={{ 
+                  backgroundColor: 'white',
+                  borderColor: validationErrors.channel ? '#ef4444' : undefined
+                }}
+              >
                 <SelectValue placeholder="Select Channel" />
               </SelectTrigger>
               <SelectContent>
@@ -380,7 +401,13 @@ export default function PosterSaveModal({
               Dimension <span className="text-red-500">*</span>
             </label>
             <Select value={selectedDimension} onValueChange={setSelectedDimension} disabled={isSaving}>
-              <SelectTrigger className={`w-full ${validationErrors.dimension ? 'border-red-500' : ''}`}>
+              <SelectTrigger 
+                className="w-full"
+                style={{ 
+                  backgroundColor: 'white',
+                  borderColor: validationErrors.dimension ? '#ef4444' : undefined
+                }}
+              >
                 <SelectValue placeholder="Select Dimension" />
               </SelectTrigger>
               <SelectContent>
@@ -402,7 +429,13 @@ export default function PosterSaveModal({
               Use Case <span className="text-red-500">*</span>
             </label>
             <Select value={selectedUseCase} onValueChange={setSelectedUseCase} disabled={isSaving}>
-              <SelectTrigger className={`w-full ${validationErrors.useCase ? 'border-red-500' : ''}`}>
+              <SelectTrigger 
+                className="w-full"
+                style={{ 
+                  backgroundColor: 'white',
+                  borderColor: validationErrors.useCase ? '#ef4444' : undefined
+                }}
+              >
                 <SelectValue placeholder="Select Use Case" />
               </SelectTrigger>
               <SelectContent>

@@ -3,6 +3,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Force white background on all SelectTrigger components */
+[data-radix-select-trigger] {
+  background-color: white !important;
+}
+
+/* Backup selector for SelectTrigger components */
+button[role="combobox"] {
+  background-color: white !important;
+}
+
+/* Additional comprehensive selectors for SelectTrigger */
+[role="combobox"] {
+  background-color: white !important;
+}
+
+/* Target by aria attributes */
+[aria-haspopup="listbox"] {
+  background-color: white !important;
+}
+
+/* Target specific Radix Select component */
+button[data-radix-collection-item] {
+  background-color: white !important;
+}
+
+/* Force all select-like inputs to have white background */
+select, 
+[role="combobox"],
+button[aria-expanded] {
+  background-color: white !important;
+}
+
 /* Custom slider styles */
 .slider {
   -webkit-appearance: none;

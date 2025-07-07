@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { contentService } from '@/services/api';
 import { useToast } from '@/components/ui/toast';
-import { API_BASE_URL } from '@/utils/constants';
+import { API_BASE_URL, type DimensionValue, isValidDimensionValue } from '@/utils/constants';
 import AIPromptSection from '@/components/content/AIPromptSection';
 import ImageSelectionTabs from '@/components/content/ImageSelectionTabs';
 import type { Content, Image, AIImage } from '@/types/content';
@@ -52,6 +52,12 @@ export default function ImageGenerationPage() {
       return;
     }
 
+    // Validate dimension value
+    if (!isValidDimensionValue(dimension)) {
+      addToast('Invalid dimension selected', 'error');
+      return;
+    }
+
     try {
       setIsGenerating(true);
       setImageLoadError(null); // Clear previous error
@@ -73,11 +79,11 @@ export default function ImageGenerationPage() {
         };
       });
 
-      // Prepare API payload
+      // Prepare API payload - dimension is now properly typed as DimensionValue
       const payload = {
         content_id: contentId,
         slug: slug || '',
-        ratio: dimension,
+        ratio: dimension as DimensionValue,
         channel: channel,
         promptText: aiPrompt,
         referenceImages: referenceImages

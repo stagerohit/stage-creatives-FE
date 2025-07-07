@@ -22,7 +22,7 @@ export default function ImageGenerationControls({
     <div className="bg-white rounded-b-lg shadow p-2 border-t border-gray-200">
       <div className="flex justify-between items-center">
         <Select value={selectedDimension} onValueChange={setSelectedDimension}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-32" style={{ backgroundColor: 'white' }}>
             <SelectValue placeholder="Dimension" />
           </SelectTrigger>
           <SelectContent>
