@@ -114,10 +114,11 @@ export const isValidDimensionValue = (value: string): value is DimensionValue =>
 };
 
 export const CHANNEL_OPTIONS = [
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'twitter', label: 'Twitter' },
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'youtube', label: 'YouTube' },
+  { value: 'google', label: 'GOOGLE' },
+  { value: 'meta', label: 'META' },
+  { value: 'clevertap', label: 'CLEVERTAP' },
+  { value: 'app', label: 'APP' },
+  { value: 'twitter', label: 'TWITTER' },
 ] as const;
 
 export const USE_CASE_OPTIONS = [

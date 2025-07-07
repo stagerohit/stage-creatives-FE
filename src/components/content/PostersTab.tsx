@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { contentService } from '@/services/api';
-import { API_BASE_URL, COLORS, DIMENSION_OPTIONS } from '@/utils/constants';
+import { API_BASE_URL, COLORS, DIMENSION_OPTIONS, CHANNEL_OPTIONS } from '@/utils/constants';
 import type { Content, Poster, ApiError } from '@/types/content';
 
 interface PostersTabProps {
@@ -150,7 +150,11 @@ export default function PostersTab({ content }: PostersTabProps) {
                 <SelectValue placeholder="Channel" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="placeholder">Channel</SelectItem>
+                {CHANNEL_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -199,7 +203,11 @@ export default function PostersTab({ content }: PostersTabProps) {
                 <SelectValue placeholder="Channel" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="placeholder">Channel</SelectItem>
+                {CHANNEL_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -260,7 +268,11 @@ export default function PostersTab({ content }: PostersTabProps) {
               <SelectValue placeholder="Channel" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="placeholder">Channel</SelectItem>
+              {CHANNEL_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
