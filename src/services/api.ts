@@ -1,9 +1,15 @@
 import axios from 'axios';
-import { API_BASE_URL, API_ENDPOINTS } from '../utils/constants';
+import { API_BASE_URL, API_ENDPOINTS, STAGE_API_BASE_URL, type DialectCode } from '../utils/constants';
 import type { ContentResponse, Content, Poster, AIImage, Copy, Tagline, TitleLogo, Image, Video, VideoResponse } from '../types/content';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 10000,
+});
+
+// Create separate axios instance for Stage API
+const stageApi = axios.create({
+  baseURL: STAGE_API_BASE_URL,
   timeout: 10000,
 });
 
@@ -13,6 +19,66 @@ const getContentId = (content: Content): string => {
 };
 
 export const contentService = {
+  // New dialect-based content fetching methods
+  getContentByDialect: async (dialect: DialectCode): Promise<ContentResponse> => {
+    try {
+      const response = await stageApi.get<ContentResponse>('/all', {
+        params: {
+          page: 1,
+          perPage: 100,
+          dialect: dialect,
+        },
+      });
+      
+      // Filter only active content
+      const activeContent = response.data.items.filter(item => item.status === 'active');
+      
+      return {
+        ...response.data,
+        items: activeContent,
+        total: activeContent.length,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw {
+          message: error.response?.data?.message || error.message,
+          status: error.response?.status,
+        };
+      }
+      throw { message: 'An unexpected error occurred' };
+    }
+  },
+
+  searchContentByDialect: async (keyword: string, dialect: DialectCode): Promise<ContentResponse> => {
+    try {
+      const response = await stageApi.get<ContentResponse>('/search', {
+        params: {
+          keyword,
+          page: 1,
+          perPage: 100,
+          dialect: dialect,
+        },
+      });
+      
+      // Filter only active content
+      const activeContent = response.data.items.filter(item => item.status === 'active');
+      
+      return {
+        ...response.data,
+        items: activeContent,
+        total: activeContent.length,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw {
+          message: error.response?.data?.message || error.message,
+          status: error.response?.status,
+        };
+      }
+      throw { message: 'An unexpected error occurred' };
+    }
+  },
+
   getAllContent: async (): Promise<ContentResponse> => {
     try {
       const response = await api.get<ContentResponse>(API_ENDPOINTS.ALL_CONTENT);

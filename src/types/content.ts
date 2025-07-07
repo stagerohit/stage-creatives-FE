@@ -28,6 +28,10 @@ export interface Content {
 
 export interface ContentResponse {
   items: Content[];
+  page?: number;
+  perPage?: number;
+  total?: number;
+  totalPages?: number;
 }
 
 export interface ApiError {

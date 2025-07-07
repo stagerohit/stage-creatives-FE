@@ -1,12 +1,12 @@
 import Header from '@/components/layout/Header';
 import ContentGrid from '@/components/content/ContentGrid';
-import { useContent } from '@/hooks/useContent';
+import { useContentStore } from '@/store/useContentStore';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 
 export default function HomePage() {
-  const { contents, isLoading, error, refetch, clearError } = useContent();
+  const { contents, isLoading, error, clearError } = useContentStore();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -33,7 +33,7 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={refetch}
+                  onClick={() => window.location.reload()}
                   className="text-red-600 border-red-300 hover:bg-red-100"
                 >
                   <RefreshCw className="h-4 w-4 mr-1" />

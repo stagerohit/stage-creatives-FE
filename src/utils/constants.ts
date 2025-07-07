@@ -1,5 +1,7 @@
 export const API_BASE_URL = 'http://localhost:3001';
 
+export const STAGE_API_BASE_URL = 'https://stageapi.stage.in/nest/cms/content';
+
 export const API_ENDPOINTS = {
   ALL_CONTENT: '/all-content',
   CREATE_CONTENT: '/create-content',
@@ -17,6 +19,13 @@ export const API_ENDPOINTS = {
   GENERATE_TITLE_LOGO: '/title-logos/generate',
   GENERATE_TAGLINE: '/taglines/generate',
   UPLOAD_POSTER: '/posters/upload',
+  // New dialect-based endpoints
+  ALL_CONTENT_HARYANVI: '/all-content/har',
+  ALL_CONTENT_RAJASTHANI: '/all-content/raj',
+  ALL_CONTENT_BHOJPURI: '/all-content/bho',
+  SEARCH_HARYANVI: '/search/har',
+  SEARCH_RAJASTHANI: '/search/raj',
+  SEARCH_BHOJPURI: '/search/bho',
 } as const;
 
 export const COLORS = {
@@ -26,10 +35,21 @@ export const COLORS = {
 } as const;
 
 export const DROPDOWN_OPTIONS = [
-  { value: 'haryanvi', label: 'Haryanvi' },
-  { value: 'rajasthani', label: 'Rajasthani' },
-  { value: 'bhojpuri', label: 'Bhojpuri' },
+  { value: 'har', label: 'Haryanvi' },
+  { value: 'raj', label: 'Rajasthani' },
+  { value: 'bho', label: 'Bhojpuri' },
 ] as const;
+
+export const DIALECT_OPTIONS = [
+  { value: 'har', label: 'Haryanvi' },
+  { value: 'raj', label: 'Rajasthani' },
+  { value: 'bho', label: 'Bhojpuri' },
+] as const;
+
+export type DialectCode = 'har' | 'raj' | 'bho';
+
+// Search trigger character counts
+export const SEARCH_TRIGGER_LENGTHS = [3, 5, 7, 9, 12] as const;
 
 // TypeScript types for dimension handling
 export type DimensionValue = 
